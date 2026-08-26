@@ -1,0 +1,33 @@
+'use client'
+
+import { FormEvent, useState } from 'react'
+import { ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
+
+export default function RegisterPage() {
+  const [fullName, setFullName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [message, setMessage] = useState('')
+  const [success, setSuccess] = useState(false)
+
+  async function register(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setMessage('')
+    const { error } = await createClient().auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ?? `${window.location.origin}/auth/callback`,
+        data: { full_name: fullName },
+      },
+    })
+    if (error) {
+      setMessage(error.message.toLowerCase().includes('password') ? 'Please use a stronger password.' : 'Unable to create account. Please review your details and try again.')
+      return
+    }
+    setSuccess(true)
+  }
+
+  return <main className="min-h-screen bg-secondary/25 px-5 py-8 lg:px-10"><div className="mx-auto max-w-5xl"><header className="flex items-center justify-between border-b border-border bg-card px-5 py-4"><a href="/" className="inline-flex items-center gap-2 font-semibold text-primary"><ArrowLeft size={17} /> Back to CET Cell</a><span className="text-sm font-semibold text-primary">Academic Year 2026-27</span></header><section className="mx-auto mt-12 grid max-w-4xl gap-8 rounded-2xl border border-border bg-card p-6 shadow-sm md:grid-cols-[.8fr_1.2fr] md:p-10"><div className="flex flex-col justify-center"><p className="text-sm font-bold uppercase tracking-widest text-accent">Candidate account</p><h1 className="mt-3 text-3xl font-bold text-primary">New user registration</h1><p className="mt-4 leading-7 text-muted-foreground">Create your secure account to access CET registration, application forms, hall tickets, and results.</p></div>{success ? <div className="flex flex-col items-center justify-center gap-4 rounded-xl bg-secondary p-8 text-center"><CheckCircle2 className="text-primary" size={42} /><h2 className="text-xl font-bold text-primary">Check your email</h2><p className="text-sm leading-6 text-muted-foreground">Your account was created. Confirm your email, then return to the home page to sign in.</p><a href="/" className="font-semibold text-primary">Return to sign in</a></div> : <form onSubmit={register} className="flex flex-col gap-4"><label className="flex flex-col gap-2 text-sm font-medium">Full name<input required value={fullName} onChange={event => setFullName(event.target.value)} className="rounded-md border border-input bg-background px-3 py-3 outline-none focus:ring-2 focus:ring-ring" /></label><label className="flex flex-col gap-2 text-sm font-medium">Email address<input required type="email" value={email} onChange={event => setEmail(event.target.value)} className="rounded-md border border-input bg-background px-3 py-3 outline-none focus:ring-2 focus:ring-ring" /></label><label className="flex flex-col gap-2 text-sm font-medium">Password<input required minLength={8} type="password" value={password} onChange={event => setPassword(event.target.value)} className="rounded-md border border-input bg-background px-3 py-3 outline-none focus:ring-2 focus:ring-ring" /></label><button type="submit" className="mt-2 rounded-md bg-primary px-4 py-3 font-bold text-primary-foreground">Create account</button>{message && <p role="alert" className="text-sm text-destructive">{message}</p>}<p className="text-center text-sm text-muted-foreground">Already registered? <a href="/" className="font-semibold text-primary">Sign in</a></p></form>}</section></div></main>
+}
