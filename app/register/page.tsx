@@ -26,8 +26,18 @@ export default function RegisterPage() {
       const errorText = error.message.toLowerCase()
       if (errorText.includes('student_capacity_reached') || errorText.includes('capacity')) {
         setMessage('Registration is closed: 20 student seats are already filled. नोंदणी बंद आहे — २० विद्यार्थ्यांची मर्यादा पूर्ण झाली आहे.')
+      } else if (errorText.includes('email_address_invalid') || errorText.includes('invalid email')) {
+        setMessage('Please enter a valid email address.')
+      } else if (errorText.includes('email_address_not_authorized')) {
+        setMessage('This email cannot be used for registration right now. Please use an authorized email address.')
+      } else if (errorText.includes('already registered') || errorText.includes('user already') || errorText.includes('email exists')) {
+        setMessage('This email is already registered. Please return to the portal and sign in.')
+      } else if (errorText.includes('rate limit') || errorText.includes('over_email_send_rate_limit')) {
+        setMessage('Too many registration attempts. Please wait a while and try again.')
+      } else if (errorText.includes('password')) {
+        setMessage('Please use a stronger password with at least 6 characters.')
       } else {
-        setMessage(errorText.includes('password') ? 'Please use a stronger password.' : 'Unable to create account. Please review your details and try again.')
+        setMessage(`Unable to create account (${error.code ?? 'signup_error'}). Please check your email and password, then try again.`)
       }
       return
     }
