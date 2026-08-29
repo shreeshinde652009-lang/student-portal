@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, isFirebaseConfigured } from '@/lib/firebase';
 import { ShieldCheck, AlertCircle, Loader2, ArrowLeft, KeyRound } from 'lucide-react';
 import Link from 'next/link';
 
@@ -18,6 +18,11 @@ export default function AdminLoginPage() {
 
     if (!email || !password) {
       setError('Please enter both admin email and password.');
+      return;
+    }
+
+    if (!isFirebaseConfigured) {
+      setError('Firebase is not configured. Add the real Firebase Web App credentials in the project environment variables.');
       return;
     }
 
