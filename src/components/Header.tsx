@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Shield, User, Lock, Home, FileText } from 'lucide-react';
+import { User, Lock, Home, FileText } from 'lucide-react';
 
 export default function Header() {
   return (
@@ -8,7 +8,7 @@ export default function Header() {
       <div className="border-b border-blue-700/50 bg-blue-950/40 px-4 py-1.5 text-xs">
         <div className="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
           <div className="flex items-center space-x-2 font-medium">
-            <span>Government of Maharashtra / State Common Entrance Test Cell</span>
+            <span>Government of Maharashtra / State Common Entrance Test Cell, Maharashtra State</span>
           </div>
           <div className="flex items-center space-x-4">
             <Link href="/" className="hover:underline flex items-center gap-1">
@@ -30,12 +30,16 @@ export default function Header() {
       {/* Main Header Banner */}
       <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4 text-center md:text-left">
-          <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center p-2 border-2 border-amber-400 shrink-0">
-            <Shield className="w-10 h-10 text-amber-400" />
+          <div className="w-20 h-20 md:w-24 md:h-24 bg-white rounded-full flex items-center justify-center p-1 border-2 border-amber-400 shrink-0 overflow-hidden">
+            <img
+              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/cet%20cell%20official%20logo-EVXGcUThytCHkwOqahzhC0IAo6dk0E.png"
+              alt="State Common Entrance Test Cell, Maharashtra State official logo"
+              className="w-full h-full object-contain"
+            />
           </div>
           <div>
             <h1 className="text-xl md:text-2xl font-bold tracking-wide uppercase text-amber-300">
-              State Common Entrance Test Cell
+              State Common Entrance Test Cell, Maharashtra State
             </h1>
             <p className="text-sm md:text-base text-blue-100 font-medium">
               Linux CS Entrance &amp; Admission Portal
