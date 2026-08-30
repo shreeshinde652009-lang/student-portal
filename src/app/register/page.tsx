@@ -131,9 +131,9 @@ export default function RegisterPage() {
         sscBoard: formData.sscBoard, sscPassingYear: formData.sscPassingYear, sscPercentage: formData.sscPercentage,
         hscBoard: formData.hscBoard, hscPassingYear: formData.hscPassingYear, hscPercentage: formData.hscPercentage,
       };
-      const { error: profileError } = await supabase.from('profiles').upsert({ id: user.id, full_name: formData.fullName, mobile: formData.mobile, date_of_birth: formData.dob, category: formData.category });
+      const { error: profileError } = await supabase.from('profiles').upsert({ id: authData.user.id, full_name: formData.fullName, mobile: formData.mobile, date_of_birth: formData.dob, category: formData.category });
       if (profileError) throw profileError;
-      const { error: applicationError } = await supabase.from('applications').insert({ user_id: user.id, application_number: appNumber, course_name: 'CET Examination', exam_group: 'CET', personal_data: personalData, academic_data: academicData, status: 'submitted', submitted_at: new Date().toISOString() });
+      const { error: applicationError } = await supabase.from('applications').insert({ user_id: authData.user.id, application_number: appNumber, course_name: 'CET Examination', exam_group: 'CET', personal_data: personalData, academic_data: academicData, status: 'submitted', submitted_at: new Date().toISOString() });
       if (applicationError) throw applicationError;
 
       setSuccessInfo({
