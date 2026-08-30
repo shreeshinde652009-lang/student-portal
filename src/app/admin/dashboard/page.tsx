@@ -44,10 +44,13 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     const load = async () => {
       const supabase = createClient();
+      const demoMode = sessionStorage.getItem('adminDemoMode') === 'true';
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push('/admin/login'); return; }
-      const { data: profile, error: profileError } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-      if (profileError || !['admin', 'super_admin'].includes(profile?.role)) { router.push('/admin/login'); return; }
+      if (!user && !demoMode) { router.push('/admin/login'); return; }
+      if (!demoMode) {
+        const { data: profile, error: profileError } = await supabase.from('profiles').select('role').eq('id', user!.id).single();
+        if (profileError || !['admin', 'super_admin'].includes(profile?.role)) { router.push('/admin/login'); return; }
+      }
       fetchStudents();
     };
     load();
@@ -70,8 +73,9 @@ export default function AdminDashboardPage() {
   };
 
   const handleLogout = async () => {
-    sessionStorage.removeItem('isAdmin');
-    await createClient().auth.signOut();
+  sessionStorage.removeItem('isAdmin');
+  sessionStorage.removeItem('adminDemoMode');
+  await createClient().auth.signOut();
     router.push('/admin/login');
   };
 
