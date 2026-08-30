@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, isFirebaseConfigured } from '@/lib/firebase';
+import { createClient } from '@/lib/supabase';
 import { ShieldCheck, AlertCircle, Loader2, ArrowLeft, KeyRound } from 'lucide-react';
 import Link from 'next/link';
 
@@ -21,15 +20,13 @@ export default function AdminLoginPage() {
       return;
     }
 
-    if (!isFirebaseConfigured) {
-      setError('Firebase is not configured. Add the real Firebase Web App credentials in the project environment variables.');
-      return;
-    }
-
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const { data, error: loginError } = await createClient().auth.signInWithPassword({ email, password });
+      if (loginError) throw loginError;
+      const { data: profile } = await createClient().from('profiles').select('role').eq('id', data.user.id).single();
+      if (profile?.role !== 'admin') throw new Error('Admin access denied.');
       sessionStorage.setItem('isAdmin', 'true');
       window.location.href = '/admin/dashboard';
     } catch (err: unknown) {

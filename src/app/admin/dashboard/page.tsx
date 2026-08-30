@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { createClient } from '@/lib/supabase';
 import { StudentApplication, ApplicationStatus } from '@/types/student';
 import {
   Users,
@@ -44,26 +42,23 @@ export default function AdminDashboardPage() {
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      const isAdmin = sessionStorage.getItem('isAdmin') === 'true';
-      if (!user || !isAdmin) {
-        router.push('/admin/login');
-        return;
-      }
+    const load = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.push('/admin/login'); return; }
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+      if (profile?.role !== 'admin') { router.push('/admin/login'); return; }
       fetchStudents();
-    });
-
-    return () => unsubscribe();
+    };
+    load();
   }, [router]);
 
   const fetchStudents = async () => {
     setLoading(true);
     try {
-      const querySnapshot = await getDocs(collection(db, 'applications'));
-      const list: StudentApplication[] = [];
-      querySnapshot.forEach((docSnap) => {
-        list.push({ id: docSnap.id, ...docSnap.data() } as StudentApplication);
-      });
+      const { data: rows, error: queryError } = await createClient().from('applications').select('*');
+      if (queryError) throw queryError;
+      const list: StudentApplication[] = (rows || []).map((row) => ({ id: row.id, ...row.personal_data, ...row.academic_data, applicationNumber: row.application_number, userId: row.user_id, status: row.status, createdAt: row.created_at, updatedAt: row.updated_at } as StudentApplication));
       // Sort newest first
       list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setStudents(list);
@@ -76,7 +71,7 @@ export default function AdminDashboardPage() {
 
   const handleLogout = async () => {
     sessionStorage.removeItem('isAdmin');
-    await signOut(auth);
+    await createClient().auth.signOut();
     router.push('/admin/login');
   };
 
@@ -129,10 +124,8 @@ export default function AdminDashboardPage() {
   const handleStatusChange = async (studentId: string, newStatus: ApplicationStatus) => {
     try {
       setActionLoading(true);
-      await updateDoc(doc(db, 'applications', studentId), {
-        status: newStatus,
-        updatedAt: new Date().toISOString(),
-      });
+      const { error } = await createClient().from('applications').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', studentId);
+      if (error) throw error;
       setStudents((prev) =>
         prev.map((s) => (s.userId === studentId || s.id === studentId ? { ...s, status: newStatus } : s))
       );
@@ -158,7 +151,8 @@ export default function AdminDashboardPage() {
         ...editFormData,
         updatedAt: new Date().toISOString(),
       };
-      await updateDoc(doc(db, 'applications', docId), updatedObj);
+      const { error } = await createClient().from('applications').update({ personal_data: updatedObj, updated_at: new Date().toISOString() }).eq('id', docId);
+      if (error) throw error;
       setStudents((prev) =>
         prev.map((s) => (s.id === docId || s.userId === docId ? ({ ...s, ...updatedObj } as StudentApplication) : s))
       );
@@ -176,7 +170,8 @@ export default function AdminDashboardPage() {
     setActionLoading(true);
 
     try {
-      await deleteDoc(doc(db, 'applications', docId));
+      const { error } = await createClient().from('applications').delete().eq('id', docId);
+      if (error) throw error;
       setStudents((prev) => prev.filter((s) => (s.id !== docId && s.userId !== docId)));
       setDeleteModalOpen(false);
     } catch (err) {

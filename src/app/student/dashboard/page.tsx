@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { createClient } from '@/lib/supabase';
 import { StudentApplication } from '@/types/student';
 import { LogOut, FileText, CheckCircle, Clock, XCircle, AlertCircle, Loader2 } from 'lucide-react';
 
@@ -15,32 +13,21 @@ export default function StudentDashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        router.push('/student/login');
-        return;
-      }
-
-      try {
-        const appDoc = await getDoc(doc(db, 'applications', user.uid));
-        if (appDoc.exists()) {
-          setApplication(appDoc.data() as StudentApplication);
-        } else {
-          setError('No application record found for this account.');
-        }
-      } catch (err: unknown) {
-        console.error('Error fetching application:', err);
-        setError('Failed to fetch application details.');
-      } finally {
-        setLoading(false);
-      }
-    });
-
-    return () => unsubscribe();
+    const supabase = createClient();
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.push('/student/login'); return; }
+      const { data, error: queryError } = await supabase.from('applications').select('*').eq('user_id', user.id).maybeSingle();
+      if (queryError) setError('Failed to fetch application details.');
+      else if (data) setApplication({ id: data.id, ...data.personal_data, ...data.academic_data, applicationNumber: data.application_number, userId: data.user_id, status: data.status, createdAt: data.created_at, updatedAt: data.updated_at } as StudentApplication);
+      else setError('No application record found for this account.');
+      setLoading(false);
+    };
+    load();
   }, [router]);
 
   const handleLogout = async () => {
-    await signOut(auth);
+    await createClient().auth.signOut();
     router.push('/student/login');
   };
 

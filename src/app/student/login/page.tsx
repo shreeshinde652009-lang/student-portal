@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, isFirebaseConfigured } from '@/lib/firebase';
+import { createClient } from '@/lib/supabase';
 import { UserCheck, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
@@ -21,15 +20,11 @@ export default function StudentLoginPage() {
       return;
     }
 
-    if (!isFirebaseConfigured) {
-      setError('Firebase is not configured. Add the real Firebase Web App credentials in the project environment variables.');
-      return;
-    }
-
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const { error: loginError } = await createClient().auth.signInWithPassword({ email, password });
+      if (loginError) throw loginError;
       window.location.href = '/student/dashboard';
     } catch (err: unknown) {
       console.error('Login error:', err);
