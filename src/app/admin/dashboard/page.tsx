@@ -46,8 +46,8 @@ export default function AdminDashboardPage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.push('/admin/login'); return; }
-      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-      if (profile?.role !== 'admin') { router.push('/admin/login'); return; }
+      const { data: profile, error: profileError } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+      if (profileError || !['admin', 'super_admin'].includes(profile?.role)) { router.push('/admin/login'); return; }
       fetchStudents();
     };
     load();
@@ -58,7 +58,7 @@ export default function AdminDashboardPage() {
     try {
       const { data: rows, error: queryError } = await createClient().from('applications').select('*');
       if (queryError) throw queryError;
-      const list: StudentApplication[] = (rows || []).map((row) => ({ id: row.id, ...row.personal_data, ...row.academic_data, applicationNumber: row.application_number, userId: row.user_id, status: row.status, createdAt: row.created_at, updatedAt: row.updated_at } as StudentApplication));
+      const list: StudentApplication[] = (rows || []).map((row) => ({ id: row.id, ...row.personal_data, ...row.academic_data, applicationNumber: row.application_number, userId: row.user_id, status: String(row.status).toUpperCase().replace('VERIFIED', 'APPROVED').replace('ADMITTED', 'APPROVED') as ApplicationStatus, createdAt: row.created_at, updatedAt: row.updated_at } as StudentApplication));
       // Sort newest first
       list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setStudents(list);
@@ -124,7 +124,7 @@ export default function AdminDashboardPage() {
   const handleStatusChange = async (studentId: string, newStatus: ApplicationStatus) => {
     try {
       setActionLoading(true);
-      const { error } = await createClient().from('applications').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', studentId);
+      const { error } = await createClient().from('applications').update({ status: newStatus.toLowerCase() === 'approved' ? 'verified' : newStatus.toLowerCase(), updated_at: new Date().toISOString() }).eq('id', studentId);
       if (error) throw error;
       setStudents((prev) =>
         prev.map((s) => (s.userId === studentId || s.id === studentId ? { ...s, status: newStatus } : s))

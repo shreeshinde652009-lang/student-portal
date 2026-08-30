@@ -25,8 +25,9 @@ export default function AdminLoginPage() {
     try {
       const { data, error: loginError } = await createClient().auth.signInWithPassword({ email, password });
       if (loginError) throw loginError;
-      const { data: profile } = await createClient().from('profiles').select('role').eq('id', data.user.id).single();
-      if (profile?.role !== 'admin') throw new Error('Admin access denied.');
+      const supabase = createClient();
+      const { data: profile, error: profileError } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
+      if (profileError || !['admin', 'super_admin'].includes(profile?.role)) throw new Error('Admin access denied.');
       sessionStorage.setItem('isAdmin', 'true');
       window.location.href = '/admin/dashboard';
     } catch (err: unknown) {

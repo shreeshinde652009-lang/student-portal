@@ -1,10 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { auth, db, storage } from '@/lib/firebase';
+import { createClient } from '@/lib/supabase';
 import { generateApplicationNumber } from '@/lib/utils';
 import { RegistrationFormData } from '@/types/student';
 import { UserPlus, CheckCircle, AlertCircle, Upload, Loader2, ArrowLeft } from 'lucide-react';
@@ -120,51 +117,24 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // 1. Create Firebase Auth user
-      const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      const user = userCredential.user;
-
-      // 2. Upload Photo to Firebase Storage
-      let photoUrl = '';
-      if (formData.photoFile) {
-        const fileExt = formData.photoFile.name.split('.').pop() || 'jpg';
-        const storageRef = ref(storage, `student_photos/${user.uid}_${Date.now()}.${fileExt}`);
-        const uploadSnapshot = await uploadBytes(storageRef, formData.photoFile);
-        photoUrl = await getDownloadURL(uploadSnapshot.ref);
-      }
-
-      // 3. Generate unique application number
+      const supabase = createClient();
+      const { data: authData, error: authError } = await supabase.auth.signUp({ email: formData.email, password: formData.password });
+      if (authError || !authData.user) throw authError || new Error('Registration failed.');
       const appNumber = generateApplicationNumber();
-
-      // 4. Save to Firestore
-      const studentData = {
-        applicationNumber: appNumber,
-        userId: user.uid,
-        fullName: formData.fullName,
-        fatherName: formData.fatherName,
-        motherName: formData.motherName,
-        dob: formData.dob,
-        gender: formData.gender,
-        mobile: formData.mobile,
-        email: formData.email,
-        category: formData.category,
-        address: formData.address,
-        district: formData.district,
-        state: formData.state,
-        sscBoard: formData.sscBoard,
-        sscPassingYear: formData.sscPassingYear,
-        sscPercentage: formData.sscPercentage,
-        hscBoard: formData.hscBoard,
-        hscPassingYear: formData.hscPassingYear,
-        hscPercentage: formData.hscPercentage,
+      const personalData = {
+        fullName: formData.fullName, fatherName: formData.fatherName, motherName: formData.motherName,
+        dob: formData.dob, gender: formData.gender, mobile: formData.mobile, email: formData.email,
+        category: formData.category, address: formData.address, district: formData.district, state: formData.state,
         domicileNumber: formData.domicileNumber,
-        photoUrl: photoUrl,
-        status: 'SUBMITTED',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
       };
-
-      await setDoc(doc(db, 'applications', user.uid), studentData);
+      const academicData = {
+        sscBoard: formData.sscBoard, sscPassingYear: formData.sscPassingYear, sscPercentage: formData.sscPercentage,
+        hscBoard: formData.hscBoard, hscPassingYear: formData.hscPassingYear, hscPercentage: formData.hscPercentage,
+      };
+      const { error: profileError } = await supabase.from('profiles').upsert({ id: user.id, full_name: formData.fullName, mobile: formData.mobile, date_of_birth: formData.dob, category: formData.category });
+      if (profileError) throw profileError;
+      const { error: applicationError } = await supabase.from('applications').insert({ user_id: user.id, application_number: appNumber, course_name: 'CET Examination', exam_group: 'CET', personal_data: personalData, academic_data: academicData, status: 'submitted', submitted_at: new Date().toISOString() });
+      if (applicationError) throw applicationError;
 
       setSuccessInfo({
         applicationNumber: appNumber,
