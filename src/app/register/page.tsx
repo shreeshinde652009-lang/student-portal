@@ -133,8 +133,14 @@ export default function RegisterPage() {
       };
       const { error: profileError } = await supabase.from('profiles').upsert({ id: authData.user.id, full_name: formData.fullName, mobile: formData.mobile, date_of_birth: formData.dob, category: formData.category });
       if (profileError) throw profileError;
-      const { error: applicationError } = await supabase.from('applications').insert({ user_id: authData.user.id, application_number: appNumber, course_name: 'CET Examination', exam_group: 'CET', personal_data: personalData, academic_data: academicData, status: 'submitted', submitted_at: new Date().toISOString() });
-      if (applicationError) throw applicationError;
+      const { data: application, error: applicationError } = await supabase.from('applications').insert({ user_id: authData.user.id, application_number: appNumber, course_name: 'CET Examination', exam_group: 'CET', personal_data: personalData, academic_data: academicData, status: 'submitted', submitted_at: new Date().toISOString() }).select('id').single();
+      if (applicationError || !application) throw applicationError || new Error('Application could not be created.');
+      const safeName = formData.photoFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const storagePath = `${authData.user.id}/${application.id}/photo-${Date.now()}-${safeName}`;
+      const { error: uploadError } = await supabase.storage.from('documents').upload(storagePath, formData.photoFile, { contentType: formData.photoFile.type, upsert: false });
+      if (uploadError) throw new Error(`Photo upload failed: ${uploadError.message}`);
+      const { error: documentError } = await supabase.from('documents').insert({ application_id: application.id, user_id: authData.user.id, document_type: 'photo', file_name: formData.photoFile.name, mime_type: formData.photoFile.type, file_size: formData.photoFile.size, storage_path: storagePath, verification_status: 'pending' });
+      if (documentError) throw new Error(`Document record failed: ${documentError.message}`);
 
       setSuccessInfo({
         applicationNumber: appNumber,
