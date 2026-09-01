@@ -11,11 +11,6 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSkipLogin = () => {
-    sessionStorage.setItem('adminDemoMode', 'true');
-    window.location.href = '/admin/dashboard';
-  };
-
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -62,7 +57,6 @@ export default function AdminLoginPage() {
           )}
 
           <form onSubmit={handleAdminLogin} className="space-y-4">
-            <p className="text-xs text-slate-500 text-center">Use admin credentials for secure access, or continue in demo mode.</p>
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">Admin Email Address</label>
               <input
@@ -103,14 +97,6 @@ export default function AdminLoginPage() {
               )}
             </button>
           </form>
-
-          <button
-            type="button"
-            onClick={handleSkipLogin}
-            className="w-full border border-amber-500 text-slate-800 hover:bg-amber-50 font-bold py-2.5 rounded text-sm transition-colors"
-          >
-            Skip Login — Open Demo Portal
-          </button>
 
           <div className="border-t border-slate-200 pt-4 text-center text-xs text-slate-500">
             <Link href="/" className="hover:underline flex items-center justify-center gap-1">
