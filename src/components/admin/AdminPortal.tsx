@@ -32,9 +32,17 @@ export default function AdminPortal() {
       if (!user) { router.replace('/admin/login'); return; }
       const { data: profile, error: profileError } = await supabase.from('profiles').select('role').eq('id', user.id).single();
       if (profileError || !['admin', 'super_admin'].includes(profile?.role)) { router.replace('/admin/login'); return; }
-      loadApplications();
+      await loadApplications();
+      const channel = supabase.channel('admin-applications-sync')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => {
+          loadApplications();
+        })
+        .subscribe();
+      return () => { supabase.removeChannel(channel); };
     };
-    verifyAdmin();
+    let cleanup: (() => void) | undefined;
+    verifyAdmin().then((dispose) => { cleanup = dispose; });
+    return () => { cleanup?.(); };
   }, [router]);
   const filtered = useMemo(() => applications.filter((app) => JSON.stringify(app).toLowerCase().includes(query.toLowerCase())), [applications, query]);
   const getName = (app: Application) => String(app.personal_data?.fullName || app.personal_data?.full_name || 'Unnamed candidate');
