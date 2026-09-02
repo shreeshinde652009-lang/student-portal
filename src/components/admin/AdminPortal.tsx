@@ -33,12 +33,18 @@ export default function AdminPortal() {
       const { data: profile, error: profileError } = await supabase.from('profiles').select('role').eq('id', user.id).single();
       if (profileError || !['admin', 'super_admin'].includes(profile?.role)) { router.replace('/admin/login'); return; }
       await loadApplications();
-      const channel = supabase.channel('admin-applications-sync')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => {
-          loadApplications();
-        })
-        .subscribe();
-      return () => { supabase.removeChannel(channel); };
+      const channel = supabase.channel('admin-applications-sync');
+      channel.on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'applications' },
+        () => { void loadApplications(); },
+      );
+      void channel.subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.warn('[v0] Realtime unavailable; applications remain available from the initial query.');
+        }
+      });
+      return () => { void supabase.removeChannel(channel); };
     };
     let cleanup: (() => void) | undefined;
     verifyAdmin().then((dispose) => { cleanup = dispose; });
