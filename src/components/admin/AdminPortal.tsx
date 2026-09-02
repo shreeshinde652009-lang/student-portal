@@ -16,6 +16,7 @@ export default function AdminPortal() {
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
 
   const loadApplications = async () => {
@@ -32,24 +33,29 @@ export default function AdminPortal() {
       if (!user) { router.replace('/admin/login'); return; }
       const { data: profile, error: profileError } = await supabase.from('profiles').select('role').eq('id', user.id).single();
       if (profileError || !['admin', 'super_admin'].includes(profile?.role)) { router.replace('/admin/login'); return; }
+      setIsAdmin(true);
       await loadApplications();
-      const channel = supabase.channel('admin-applications-sync');
-      channel.on(
+    };
+    void verifyAdmin();
+  }, [router]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel('admin-applications-sync')
+      .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'applications' },
         () => { void loadApplications(); },
       );
-      void channel.subscribe((status) => {
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          console.warn('[v0] Realtime unavailable; applications remain available from the initial query.');
-        }
-      });
-      return () => { void supabase.removeChannel(channel); };
-    };
-    let cleanup: (() => void) | undefined;
-    verifyAdmin().then((dispose) => { cleanup = dispose; });
-    return () => { cleanup?.(); };
-  }, [router]);
+    void channel.subscribe((status) => {
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        console.warn('[v0] Realtime unavailable; applications remain available from the initial query.');
+      }
+    });
+    return () => { void supabase.removeChannel(channel); };
+  }, [isAdmin]);
   const filtered = useMemo(() => applications.filter((app) => JSON.stringify(app).toLowerCase().includes(query.toLowerCase())), [applications, query]);
   const getName = (app: Application) => String(app.personal_data?.fullName || app.personal_data?.full_name || 'Unnamed candidate');
   const getEmail = (app: Application) => String(app.personal_data?.email || 'Email unavailable');
