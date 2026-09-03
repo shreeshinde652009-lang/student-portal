@@ -96,38 +96,59 @@ export function LinuxCsRegistration() {
     return ''
   }
 
-  function next() {
+  async function next() {
     const validation = validateStep()
     if (validation) { setError(validation); return }
+    if (step === 4) {
+      await submit(new Event('submit') as unknown as FormEvent, true)
+      return
+    }
     setError(''); setStep(current => Math.min(current + 1, steps.length - 1))
   }
 
-  async function submit(event: FormEvent) {
+  async function submit(event: FormEvent, documentsOnly = false) {
     event.preventDefault()
     const validation = validateStep()
     if (validation) { setError(validation); return }
     setSaving(true); setError('')
     const supabase = createClient()
-    const { data: auth } = await supabase.auth.getUser()
-    if (!auth.user) { window.location.replace('/'); return }
-    const { data: existing } = await supabase.from('applications').select('id, application_number, status, submitted_at').eq('user_id', auth.user.id).eq('course_name', 'Linux CS').maybeSingle()
-    if (existing?.application_number) { setSubmitted({ number: existing.application_number, submittedAt: existing.submitted_at ?? new Date().toISOString() }); setSaving(false); return }
-    const applicationNumber = `LCS2026-${crypto.randomUUID().slice(0, 8).toUpperCase()}`
-    const { data: application, error: insertError } = await supabase.from('applications').insert({ user_id: auth.user.id, application_number: applicationNumber, exam_year: Number(form.examYear), course_name: 'Linux CS', exam_group: 'Linux CS', personal_data: { fullName: form.fullName, dateOfBirth: form.dateOfBirth, gender: form.gender, mobile: form.mobile, email: form.email, address: form.address, city: form.city, district: form.district, state: form.state, pinCode: form.pinCode }, academic_data: { schoolName: form.schoolName, board: form.board, passingYear: form.passingYear, percentage: form.percentage, examCenter: form.examCenter, documents: {} }, status: 'submitted', submitted_at: new Date().toISOString() }).select('id, application_number, submitted_at').single()
-    if (insertError || !application) { setError('We could not submit your application. Please try again.'); setSaving(false); return }
+    const { data: auth, error: authError } = await supabase.auth.getUser()
+    console.log('DOCUMENT DEBUG: authenticated user', { userId: auth.user?.id, error: authError?.message })
+    if (authError || !auth.user) { setError('Your session has expired. Please sign in again.'); setSaving(false); return }
+    const { data: existing, error: existingError } = await supabase.from('applications').select('id, application_number, status, submitted_at').eq('user_id', auth.user.id).eq('course_name', 'Linux CS').maybeSingle()
+    if (existingError) { console.error('DOCUMENT DEBUG: existing application error', { message: existingError.message, code: existingError.code }); setError('Could not load your application. Please try again.'); setSaving(false); return }
+    if (existing?.application_number && !documentsOnly) { setSubmitted({ number: existing.application_number, submittedAt: existing.submitted_at ?? new Date().toISOString() }); setSaving(false); return }
+    let application = existing
+    if (!application) {
+      const applicationNumber = `LCS2026-${crypto.randomUUID().slice(0, 8).toUpperCase()}`
+      const result = await supabase.from('applications').insert({ user_id: auth.user.id, application_number: applicationNumber, exam_year: Number(form.examYear), course_name: 'Linux CS', exam_group: 'Linux CS', personal_data: { fullName: form.fullName, dateOfBirth: form.dateOfBirth, gender: form.gender, mobile: form.mobile, email: form.email, address: form.address, city: form.city, district: form.district, state: form.state, pinCode: form.pinCode }, academic_data: { schoolName: form.schoolName, board: form.board, passingYear: form.passingYear, percentage: form.percentage, examCenter: form.examCenter, documents: {} }, status: 'submitted', submitted_at: new Date().toISOString() }).select('id, application_number, submitted_at').single()
+      console.log('DOCUMENT DEBUG: application insert result', { data: result.data, error: result.error?.message, code: result.error?.code })
+      if (result.error || !result.data) { console.error('DOCUMENT DEBUG: application insert error', { message: result.error?.message, code: result.error?.code }); setError('We could not create the application record. Please try again.'); setSaving(false); return }
+      application = result.data
+    }
+    console.log('DOCUMENT DEBUG: application id', { id: application.id, applicationNumber: application.application_number })
     const files = [{ file: form.photo, type: 'photo' }, { file: form.signature, type: 'signature' }, { file: form.certificate, type: 'certificate' }]
     for (const item of files) {
+      console.log(`DOCUMENT DEBUG: selected ${item.type}`, item.file ? { name: item.file.name, size: item.file.size, type: item.file.type } : null)
       if (!item.file) continue
-      const path = `${auth.user.id}/${applicationNumber}/${item.type}-${item.file.name}`
-      const upload = await supabase.storage.from('documents').upload(path, item.file, { upsert: false })
-      if (upload.error) { setError('Application saved, but a document upload failed. Contact the help desk with your application number.'); setSaving(false); return }
-      const { error: documentError } = await supabase.from('documents').insert({ application_id: application.id, user_id: auth.user.id, document_type: item.type, file_name: item.file.name, mime_type: item.file.type, file_size: item.file.size, storage_path: path })
-      if (documentError) { setError('Application saved, but document metadata could not be saved. Please contact the help desk.'); setSaving(false); return }
-      if (item.type === 'photo') {
-        const { data: signed } = await supabase.storage.from('documents').createSignedUrl(path, 3600)
-        if (signed?.signedUrl) setUploadedPhotoUrl(signed.signedUrl)
-      }
+      const path = `${auth.user.id}/${application.application_number}/${item.type}-${item.file.name}`
+      console.log(`DOCUMENT DEBUG: starting ${item.type} upload`, { bucket: 'documents', path })
+      const upload = await supabase.storage.from('documents').upload(path, item.file, { upsert: true })
+      console.log(`DOCUMENT DEBUG: ${item.type} upload result`, { data: upload.data, error: upload.error?.message, status: upload.error?.status })
+      if (upload.error) { console.error('DOCUMENT DEBUG: storage error', { message: upload.error.message, status: upload.error.status }); setError(`Document upload failed: ${upload.error.message}`); setSaving(false); return }
+      const documentResult = await supabase.from('documents').upsert({ application_id: application.id, user_id: auth.user.id, document_type: item.type, file_name: item.file.name, mime_type: item.file.type, file_size: item.file.size, storage_path: path }, { onConflict: 'application_id,document_type' }).select('id, application_id, document_type, storage_path').single()
+      console.log('DOCUMENT DEBUG: database insert/upsert result', { type: item.type, data: documentResult.data, error: documentResult.error?.message, code: documentResult.error?.code })
+      if (documentResult.error || !documentResult.data) { console.error('DOCUMENT DEBUG: document database error', { message: documentResult.error?.message, code: documentResult.error?.code }); setError(`Document record failed: ${documentResult.error?.message ?? 'unknown database error'}`); setSaving(false); return }
     }
+    const { data: savedDocuments, error: refetchError } = await supabase.from('documents').select('document_type, storage_path').eq('application_id', application.id)
+    console.log('DOCUMENT DEBUG: refetch documents result', { data: savedDocuments, error: refetchError?.message })
+    if (refetchError) { setError(`Documents saved but could not be verified: ${refetchError.message}`); setSaving(false); return }
+    const documentUrls: Record<string, string> = {}
+    for (const document of savedDocuments ?? []) { const signed = await supabase.storage.from('documents').createSignedUrl(document.storage_path, 3600); if (signed.data?.signedUrl) documentUrls[document.document_type] = signed.data.signedUrl }
+    setUploadedDocumentUrls(documentUrls)
+    if (documentUrls.photo) setUploadedPhotoUrl(documentUrls.photo)
+    setError('')
+    if (documentsOnly) { setStep(5); setSaving(false); return }
     setSubmitted({ number: application.application_number, submittedAt: application.submitted_at ?? new Date().toISOString() }); setSaving(false)
   }
 
