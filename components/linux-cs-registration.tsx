@@ -136,8 +136,13 @@ export function LinuxCsRegistration() {
       const upload = await supabase.storage.from('documents').upload(path, item.file, { upsert: true })
       console.log(`DOCUMENT DEBUG: ${item.type} upload result`, { data: upload.data, error: upload.error?.message, status: upload.error?.status })
       if (upload.error) { console.error('DOCUMENT DEBUG: storage error', { message: upload.error.message, status: upload.error.status }); setError(`Document upload failed: ${upload.error.message}`); setSaving(false); return }
-      const documentResult = await supabase.from('documents').upsert({ application_id: application.id, user_id: auth.user.id, document_type: item.type, file_name: item.file.name, mime_type: item.file.type, file_size: item.file.size, storage_path: path }, { onConflict: 'application_id,document_type' }).select('id, application_id, document_type, storage_path').single()
-      console.log('DOCUMENT DEBUG: database insert/upsert result', { type: item.type, data: documentResult.data, error: documentResult.error?.message, code: documentResult.error?.code })
+      const documentData = { application_id: application.id, user_id: auth.user.id, document_type: item.type, file_name: item.file.name, mime_type: item.file.type, file_size: item.file.size, storage_path: path }
+      const { data: existingDocument, error: lookupError } = await supabase.from('documents').select('id').eq('application_id', application.id).eq('document_type', item.type).maybeSingle()
+      if (lookupError) { console.error('DOCUMENT DEBUG: document lookup error', { message: lookupError.message, code: lookupError.code }); setError(`Document record lookup failed: ${lookupError.message}`); setSaving(false); return }
+      const documentResult = existingDocument
+        ? await supabase.from('documents').update(documentData).eq('id', existingDocument.id).select('id, application_id, document_type, storage_path').single()
+        : await supabase.from('documents').insert(documentData).select('id, application_id, document_type, storage_path').single()
+      console.log('DOCUMENT DEBUG: database document save result', { type: item.type, mode: existingDocument ? 'update' : 'insert', data: documentResult.data, error: documentResult.error?.message, code: documentResult.error?.code })
       if (documentResult.error || !documentResult.data) { console.error('DOCUMENT DEBUG: document database error', { message: documentResult.error?.message, code: documentResult.error?.code }); setError(`Document record failed: ${documentResult.error?.message ?? 'unknown database error'}`); setSaving(false); return }
     }
     const { data: savedDocuments, error: refetchError } = await supabase.from('documents').select('document_type, storage_path').eq('application_id', application.id)
