@@ -7,9 +7,10 @@ type CetDocumentCardProps = {
   kind: 'hall-ticket' | 'score-card';
   applicationNumber?: string;
   available: boolean;
+  published?: boolean;
 };
 
-export function CetDocumentCard({ kind, applicationNumber, available }: CetDocumentCardProps) {
+export function CetDocumentCard({ kind, applicationNumber, available, published }: CetDocumentCardProps) {
   const isHallTicket = kind === 'hall-ticket';
   return (
     <article className="group border border-slate-300 bg-card shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
@@ -27,7 +28,7 @@ export function CetDocumentCard({ kind, applicationNumber, available }: CetDocum
       </div>
       <div className="flex flex-col gap-4 px-5 py-5">
         <p className="text-sm leading-6 text-muted-foreground">
-          {available ? 'Your application-linked document is ready to view.' : 'This document will appear after the CET Cell publishes it.'}
+          {available ? 'Your application-linked document is ready to view.' : published === false ? 'The module is enabled, but this document has not been published yet.' : 'This document will appear after the CET Cell publishes it.'}
         </p>
         <div className="flex items-center justify-between border-t border-dashed border-slate-300 pt-3 font-mono text-[11px] text-muted-foreground">
           <span>APP NO. {applicationNumber || '—'}</span>
