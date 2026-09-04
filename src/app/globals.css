@@ -20,6 +20,12 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+@media print {
+  @page { size: A4; margin: 12mm; }
+  body { background: white !important; }
+  .cet-sheet { min-height: 260mm; width: 100%; }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
