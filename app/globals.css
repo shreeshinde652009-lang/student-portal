@@ -153,6 +153,24 @@
   }
 }
 
+@keyframes announcement-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.announcement-track {
+  animation: announcement-scroll 22s linear infinite;
+}
+
+.announcement-track:hover,
+.announcement-track:focus-within {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .announcement-track { animation: none; }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
