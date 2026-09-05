@@ -40,6 +40,8 @@ export default function DashboardPage() {
   function openCard(title: string) {
     if (title === 'CET Registration') setCourseOpen(true)
     else if (title === 'Re-registration') window.location.href = '/dashboard/linux-cs-registration?mode=edit'
+    else if (title === 'Hall Ticket or Admit Card') window.location.href = '/student/hall-ticket'
+    else if (title === 'Score Card') window.location.href = '/student/score-card'
     else setActiveCard(title)
   }
 
