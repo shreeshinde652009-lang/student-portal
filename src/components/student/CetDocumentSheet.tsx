@@ -33,12 +33,13 @@ export function CetDocumentSheet({ kind, application }: CetDocumentSheetProps) {
               {[
                 ['Candidate Name', value(application, 'fullName')],
                 ['Application Number', value(application, 'applicationNumber')],
-                ['Roll Number', hallTicket ? 'Not allotted' : 'Not available'],
+                ['Roll Number', hallTicket ? value(application, 'roll_number') : 'Not available'],
                 ['Date of Birth', value(application, 'dob')],
                 ['Category', value(application, 'category')],
-                ['Gender', value(application, 'gender')],
-                [hallTicket ? 'Examination Centre' : 'CET Percentile', hallTicket ? 'To be published by CET Cell' : 'Not available'],
-                [hallTicket ? 'Examination Date' : 'Date of Result', 'Not available'],
+                ['Gender', hallTicket ? value(application, 'gender') : value(application, 'gender')],
+                [hallTicket ? 'Examination Centre' : 'CET Percentile', hallTicket ? value(application, 'exam_center_name') : 'Not available'],
+                [hallTicket ? 'Examination Date' : 'Date of Result', hallTicket ? value(application, 'exam_date') : 'Not available'],
+                ...(hallTicket ? [['Reporting Time', value(application, 'reporting_time')], ['Gate Closing Time', value(application, 'gate_closing_time')], ['Venue Code', value(application, 'venue_code')]] : []),
               ].map(([label, item]) => <div key={label} className="grid grid-cols-[42%_58%] border-b border-slate-400 last:border-b-0"><span className="bg-slate-50 p-2 font-semibold">{label}</span><span className="p-2">{item}</span></div>)}
             </div>
             <aside className="flex flex-col gap-3">
