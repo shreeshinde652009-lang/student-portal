@@ -39,7 +39,7 @@ export function CetDocumentSheet({ kind, application }: CetDocumentSheetProps) {
                 ['Gender', hallTicket ? value(application, 'gender') : value(application, 'gender')],
                 [hallTicket ? 'Examination Centre' : 'CET Percentile', hallTicket ? value(application, 'exam_center_name') : 'Not available'],
                 [hallTicket ? 'Examination Date' : 'Date of Result', hallTicket ? value(application, 'exam_date') : 'Not available'],
-                ...(hallTicket ? [['Reporting Time', value(application, 'reporting_time')], ['Gate Closing Time', value(application, 'gate_closing_time')], ['Venue Code', value(application, 'venue_code')]] : []),
+                ...(hallTicket ? [['Reporting Time', value(application, 'reporting_time')], ['Gate Closing Time', value(application, 'gate_closing_time')], ['Venue Code', value(application, 'venue_code')]] : [['Total Marks', value(application, 'total_marks')], ['Obtained Marks', value(application, 'obtained_marks')], ['Percentage', value(application, 'percentage') + '%'], ['Grade', value(application, 'grade')], ['Result', value(application, 'result')]]),
               ].map(([label, item]) => <div key={label} className="grid grid-cols-[42%_58%] border-b border-slate-400 last:border-b-0"><span className="bg-slate-50 p-2 font-semibold">{label}</span><span className="p-2">{item}</span></div>)}
             </div>
             <aside className="flex flex-col gap-3">
