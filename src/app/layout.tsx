@@ -8,7 +8,7 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'State Common Entrance Test Cell | Linux CS Admission Portal',
-  description: 'Linux CS Entrance & Admission Portal, State Common Entrance Test Cell, Maharashtra',
+  description: 'Student admission and secure computer-based examination portal for the State Common Entrance Test Cell.',
 };
 
 export default function RootLayout({
