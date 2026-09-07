@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Building2, LockKeyhole, UserRound } from 'lucide-react'
+import { Keyboard, LockKeyhole, UserRound } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 export default function CandidateLoginPage() {
@@ -36,53 +36,47 @@ export default function CandidateLoginPage() {
   }
 
   return (
-    <main className="min-h-[calc(100vh-9rem)] bg-[#eef3f8] px-4 py-8 sm:px-8 sm:py-12">
-      <section className="mx-auto max-w-5xl overflow-hidden rounded-sm border border-[#cbd5df] bg-white shadow-[0_18px_50px_rgba(18,59,93,0.12)]">
-        <div className="border-b-4 border-[#f4c430] bg-[#123b5d] px-6 py-5 text-white sm:px-10">
-          <div className="flex items-center gap-4">
-            <div className="flex size-14 shrink-0 items-center justify-center rounded-full border-2 border-white/80 bg-white text-[#123b5d] shadow-sm">
-              <Building2 className="size-7" aria-hidden="true" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#f4c430]">Government of Maharashtra</p>
-              <h1 className="mt-1 text-lg font-bold sm:text-2xl">State Common Entrance Test Cell, Maharashtra</h1>
-              <p className="mt-1 text-xs text-blue-100 sm:text-sm">Online Computer Based Examination Portal</p>
+    <main className="min-h-screen bg-white font-sans text-[#555]">
+      <div className="h-10 bg-[#3f76b8]" />
+      <section className="border-b-2 border-[#777] bg-[#686868] text-white shadow-sm">
+        <div className="flex min-h-[158px] items-stretch justify-between">
+          <div className="flex flex-1 flex-col justify-center px-5 py-5 sm:px-8">
+            <p className="text-base font-medium sm:text-lg">System Name :</p>
+            <p className="mt-1 text-4xl font-semibold leading-none text-[#fff500] sm:text-5xl">C001</p>
+            <p className="mt-3 max-w-[430px] text-sm leading-5 sm:text-base">Contact invigilator if the Name and Photograph displayed on the screen is not yours</p>
+          </div>
+          <div className="flex w-[180px] shrink-0 flex-col items-end justify-center border-l border-white/20 px-4 py-4 text-right sm:w-[305px] sm:px-7">
+            <p className="text-base sm:text-lg">Candidate Name :</p>
+            <p className="mt-1 text-3xl leading-none text-[#fff500] sm:text-4xl">John Smith</p>
+            <p className="mt-4 text-base sm:text-lg">Subject : <span className="text-[#fff500]">Mock Exam</span></p>
+          </div>
+          <div className="hidden w-[145px] items-center justify-center border-l-2 border-[#777] bg-white sm:flex">
+            <div className="flex size-[104px] items-center justify-center border border-[#555] bg-[#f4f4f4] text-[#555]">
+              <UserRound className="size-20 stroke-[1.3]" aria-label="Candidate photo placeholder" />
             </div>
           </div>
         </div>
+      </section>
 
-        <div className="border-b border-[#d7dee6] bg-[#f5f6f7] px-6 py-4 sm:px-10">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#637383]">Candidate login</p>
-          <h2 className="mt-1 text-xl font-bold text-[#173b5b] sm:text-2xl">Sign in to continue your examination</h2>
-        </div>
-
-        <div className="grid gap-8 px-6 py-8 sm:px-10 lg:grid-cols-[1fr_360px] lg:items-center lg:gap-16">
-          <div className="hidden lg:block">
-            <div className="max-w-md">
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[#2b7a78]">Secure candidate access</p>
-              <h3 className="mt-3 text-4xl font-bold leading-tight text-[#173b5b]">Your examination starts here.</h3>
-              <p className="mt-4 leading-7 text-[#637383]">Use the roll number, registered email address, and password associated with your application.</p>
-              <div className="mt-7 flex items-start gap-3 border-l-4 border-[#f4c430] bg-[#fff9df] px-4 py-3 text-sm leading-6 text-[#5d552b]">
-                <LockKeyhole className="mt-1 size-4 shrink-0" aria-hidden="true" />
-                <span>Never share your examination credentials with anyone.</span>
-              </div>
+      <section className="flex min-h-[calc(100vh-200px)] items-start justify-center px-4 py-10 sm:py-11">
+        <form onSubmit={submit} className="w-full max-w-[392px] border border-[#ddd] bg-white shadow-[0_1px_7px_rgba(0,0,0,0.12)]">
+          <div className="border-b border-[#c9c9c9] bg-gradient-to-b from-[#eeeeee] to-[#d8d8d8] px-5 py-2.5 text-base font-semibold text-[#444]">Login</div>
+          <div className="flex flex-col gap-4 px-7 py-6 sm:px-7 sm:py-7">
+            <div className="flex h-10 border border-[#d5d5d5] bg-[#f4f4f4]">
+              <span className="flex w-12 items-center justify-center border-r border-[#d5d5d5] text-[#666]"><UserRound className="size-6" aria-hidden="true" /></span>
+              <input aria-label="Roll Number" value={rollNumber} onChange={e => setRollNumber(e.target.value)} required autoComplete="username" placeholder="Roll Number" className="min-w-0 flex-1 bg-transparent px-4 text-sm text-[#444] outline-none placeholder:text-[#aaa]" />
+              <span className="flex w-12 items-center justify-center border-l border-[#d5d5d5] text-[#666]"><Keyboard className="size-5" aria-hidden="true" /></span>
             </div>
+            <div className="flex h-10 border border-[#d5d5d5] bg-[#f4f4f4]">
+              <span className="flex w-12 items-center justify-center border-r border-[#d5d5d5] text-[#666]"><LockKeyhole className="size-6" aria-hidden="true" /></span>
+              <input type="password" aria-label="Password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete="current-password" placeholder="Password" className="min-w-0 flex-1 bg-transparent px-4 text-sm text-[#444] outline-none placeholder:text-[#aaa]" />
+              <span className="flex w-12 items-center justify-center border-l border-[#d5d5d5] text-[#666]"><Keyboard className="size-5" aria-hidden="true" /></span>
+            </div>
+            <label className="text-xs text-[#777]">Registered email<input type="email" aria-label="Registered Email" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" className="mt-1 w-full border border-[#d5d5d5] bg-[#f4f4f4] px-3 py-2 text-sm text-[#444] outline-none focus:border-[#4ca6df]" /></label>
+            {message && <p role="alert" className="text-sm text-red-700">{message}</p>}
+            <button type="submit" disabled={loading} className="mt-1 h-11 bg-[#4ba6df] text-base text-white transition hover:bg-[#3798d4] disabled:opacity-60">{loading ? 'Signing in…' : 'Sign In'}</button>
           </div>
-
-          <form onSubmit={submit} className="border border-[#d7dee6] bg-white p-5 shadow-sm sm:p-7">
-            <div className="mb-6 flex items-center gap-3 border-b border-[#e5e9ee] pb-4">
-              <div className="flex size-10 items-center justify-center rounded-full bg-[#e8f1f7] text-[#123b5d]"><UserRound className="size-5" aria-hidden="true" /></div>
-              <div><p className="font-bold text-[#173b5b]">Login</p><p className="text-xs text-[#718092]">Enter your candidate details</p></div>
-            </div>
-            <div className="flex flex-col gap-4">
-              <label className="text-sm font-semibold text-[#405466]">Roll Number<input value={rollNumber} onChange={e => setRollNumber(e.target.value)} required autoComplete="username" className="mt-2 w-full rounded-sm border border-[#bac7d2] px-4 py-3 text-[#173b5b] outline-none transition focus:border-[#2b7a78] focus:ring-2 focus:ring-[#2b7a78]/15" /></label>
-              <label className="text-sm font-semibold text-[#405466]">Registered Email<input type="email" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="email" className="mt-2 w-full rounded-sm border border-[#bac7d2] px-4 py-3 text-[#173b5b] outline-none transition focus:border-[#2b7a78] focus:ring-2 focus:ring-[#2b7a78]/15" /></label>
-              <label className="text-sm font-semibold text-[#405466]">Password<input type="password" value={password} onChange={e => setPassword(e.target.value)} required autoComplete="current-password" className="mt-2 w-full rounded-sm border border-[#bac7d2] px-4 py-3 text-[#173b5b] outline-none transition focus:border-[#2b7a78] focus:ring-2 focus:ring-[#2b7a78]/15" /></label>
-              {message && <p role="alert" className="text-sm font-medium text-red-700">{message}</p>}
-              <button disabled={loading} className="mt-2 inline-flex items-center justify-center gap-2 rounded-sm bg-[#2b7a78] px-4 py-3.5 font-bold text-white transition hover:bg-[#216462] disabled:opacity-60">{loading ? 'Verifying…' : 'Sign In'}<LockKeyhole className="size-4" aria-hidden="true" /></button>
-            </div>
-          </form>
-        </div>
+        </form>
       </section>
     </main>
   )
