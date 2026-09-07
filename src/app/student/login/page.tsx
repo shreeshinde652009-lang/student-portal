@@ -44,10 +44,11 @@ export default function CandidateLoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-white font-sans text-[#555]">
-      <div className="h-10 bg-[#3f76b8]" />
+    <main className="min-h-screen bg-[#111] font-sans text-[#555] sm:flex sm:items-center sm:justify-center sm:p-2">
+      <div className="min-h-screen w-full max-w-[1024px] overflow-hidden bg-white shadow-2xl sm:min-h-[576px]">
+      <div className="h-8 bg-[#3f76b8]" />
       <section className="border-b-2 border-[#777] bg-[#686868] text-white shadow-sm">
-        <div className="flex min-h-[158px] items-stretch justify-between">
+        <div className="flex min-h-[154px] items-stretch justify-between">
           <div className="flex flex-1 flex-col justify-center px-5 py-5 sm:px-8">
             <p className="text-base font-medium sm:text-lg">System Name :</p>
             <p className="mt-1 text-4xl font-semibold leading-none text-[#fff500] sm:text-5xl">C001</p>
@@ -66,8 +67,8 @@ export default function CandidateLoginPage() {
         </div>
       </section>
 
-      <section className="flex min-h-[calc(100vh-200px)] items-start justify-center px-4 py-10 sm:py-11">
-        <form onSubmit={submit} className="w-full max-w-[392px] border border-[#ddd] bg-white shadow-[0_1px_7px_rgba(0,0,0,0.12)]">
+      <section className="flex min-h-[calc(100vh-190px)] items-start justify-center px-4 py-8 sm:py-8">
+        <form onSubmit={submit} className="w-full max-w-[294px] border border-[#ddd] bg-white shadow-[0_1px_7px_rgba(0,0,0,0.12)]">
           <div className="border-b border-[#c9c9c9] bg-gradient-to-b from-[#eeeeee] to-[#d8d8d8] px-5 py-2.5 text-base font-semibold text-[#444]">Login</div>
           <div className="flex flex-col gap-4 px-7 py-6 sm:px-7 sm:py-7">
             <div className="flex h-10 border border-[#d5d5d5] bg-[#f4f4f4]">
@@ -86,6 +87,7 @@ export default function CandidateLoginPage() {
           </div>
         </form>
       </section>
+      </div>
     </main>
   )
 }
