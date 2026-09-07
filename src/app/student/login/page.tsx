@@ -24,6 +24,14 @@ export default function CandidateLoginPage() {
       setMessage('Invalid roll number, email address, or password.')
       return
     }
+
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+    if (sessionError || !sessionData.session?.user) {
+      setLoading(false)
+      setMessage('Your session could not be established. Please try again.')
+      return
+    }
+
     const { data: ticket } = await supabase.from('hall_ticket_details').select('application_id').eq('roll_number', rollNumber.trim()).maybeSingle()
     const { data: application } = await supabase.from('applications').select('id').eq('user_id', data.user.id).maybeSingle()
     if (!ticket || !application || ticket.application_id !== application.id) {

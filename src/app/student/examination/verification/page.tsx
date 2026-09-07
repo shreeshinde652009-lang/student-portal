@@ -4,26 +4,71 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
+type Candidate = Record<string, string | null>
+
 export default function VerificationPage() {
   const router = useRouter()
-  const [candidate, setCandidate] = useState<Record<string, string | null> | null>(null)
+  const [candidate, setCandidate] = useState<Candidate | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    ;(async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return router.replace('/student/login')
-      const { data: app } = await supabase.from('applications').select('id,application_number,personal_data').eq('user_id', user.id).maybeSingle()
-      if (!app) return router.replace('/student/login')
-      const { data: ticket } = await supabase.from('hall_ticket_details').select('candidate_name,application_number,roll_number,exam_name,exam_date,exam_time,exam_center_name,photo_path').eq('application_id', app.id).maybeSingle()
+    const supabase = createClient()
+    let mounted = true
+
+    async function loadCandidate() {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const user = sessionData.session?.user
+      if (!user) {
+        if (mounted) router.replace('/student/login')
+        return
+      }
+
+      const { data: app } = await supabase
+        .from('applications')
+        .select('id,application_number,personal_data')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      if (!app) {
+        if (mounted) router.replace('/student/login')
+        return
+      }
+
+      const { data: ticket } = await supabase
+        .from('hall_ticket_details')
+        .select('candidate_name,application_number,roll_number,exam_name,exam_date,exam_time,exam_center_name,photo_path')
+        .eq('application_id', app.id)
+        .maybeSingle()
       const personal = (app.personal_data || {}) as Record<string, string>
-      setCandidate({ name: ticket?.candidate_name || personal.full_name || null, application: ticket?.application_number || app.application_number, roll: ticket?.roll_number || null, exam: ticket?.exam_name || 'Common Entrance Examination', date: ticket?.exam_date || null, session: ticket?.exam_time || null, center: ticket?.exam_center_name || null, photo: ticket?.photo_path || null })
-      setLoading(false)
-    })()
+
+      if (mounted) {
+        setCandidate({
+          name: ticket?.candidate_name || personal.full_name || null,
+          application: ticket?.application_number || app.application_number,
+          roll: ticket?.roll_number || null,
+          exam: ticket?.exam_name || 'Common Entrance Examination',
+          date: ticket?.exam_date || null,
+          session: ticket?.exam_time || null,
+          center: ticket?.exam_center_name || null,
+          photo: ticket?.photo_path || null,
+        })
+        setLoading(false)
+      }
+    }
+
+    void loadCandidate()
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || (event === 'INITIAL_SESSION' && !session)) {
+        if (mounted) router.replace('/student/login')
+      }
+    })
+
+    return () => {
+      mounted = false
+      listener.subscription.unsubscribe()
+    }
   }, [router])
 
-  if (loading) return <main className="p-10 text-center text-[#637383]">Loading candidate details…</main>
+  if (loading) return <main className="p-10 text-center text-[#637383]">Checking secure session…</main>
   if (!candidate) return null
   const initials = (candidate.name || 'Candidate').split(' ').map(part => part[0]).slice(0, 2).join('').toUpperCase()
 
