@@ -15,6 +15,7 @@ export default function CandidateLoginPage() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (loading) return
     setLoading(true)
     setMessage('')
     const supabase = createClient()

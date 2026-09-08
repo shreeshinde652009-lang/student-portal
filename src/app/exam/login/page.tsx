@@ -1,9 +1,11 @@
 'use client'
 
 import { FormEvent, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export default function ExamLoginPage() {
+  const router = useRouter()
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -13,6 +15,7 @@ export default function ExamLoginPage() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (loading) return
     setLoading(true)
     setMessage('')
 
@@ -25,14 +28,26 @@ export default function ExamLoginPage() {
         })
       : await supabase.auth.signInWithPassword({ email, password })
 
-    setLoading(false)
     if (result.error) {
+      setLoading(false)
       setMessage(mode === 'register' ? 'Registration could not be completed. Check your details and try again.' : 'Invalid email or password.')
       return
     }
 
-    setMessage(mode === 'register' ? 'Registration successful. Check your email to confirm your account, then sign in.' : 'Login successful. Your examination access is ready.')
-    if (mode === 'login') window.location.reload()
+    if (mode === 'login') {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError || !sessionData.session) {
+        setLoading(false)
+        setMessage('Your session could not be established. Please try again.')
+        return
+      }
+      setMessage('Login successful. Your examination access is ready.')
+      router.replace('/student/examination/verification')
+      return
+    }
+
+    setLoading(false)
+    setMessage('Registration successful. Check your email to confirm your account, then sign in.')
   }
 
   return (
