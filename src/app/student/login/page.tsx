@@ -33,14 +33,32 @@ export default function CandidateLoginPage() {
       return
     }
 
-    const { data: ticket } = await supabase.from('hall_ticket_details').select('application_id').eq('roll_number', rollNumber.trim()).maybeSingle()
-    const { data: application } = await supabase.from('applications').select('id').eq('user_id', data.user.id).maybeSingle()
-    if (!ticket || !application || ticket.application_id !== application.id) {
+    const { data: application, error: applicationError } = await supabase
+      .from('applications')
+      .select('id')
+      .eq('user_id', sessionData.session.user.id)
+      .maybeSingle()
+
+    if (applicationError || !application) {
       await supabase.auth.signOut()
       setLoading(false)
-      setMessage('Invalid roll number, email address, or password.')
+      setMessage('Roll Number does not match this candidate.')
       return
     }
+
+    const { data: ticket, error: ticketError } = await supabase
+      .from('hall_ticket_details')
+      .select('application_id, roll_number')
+      .eq('application_id', application.id)
+      .maybeSingle()
+
+    if (ticketError || !ticket || ticket.roll_number.trim().toLowerCase() !== rollNumber.trim().toLowerCase()) {
+      await supabase.auth.signOut()
+      setLoading(false)
+      setMessage('Roll Number does not match this candidate.')
+      return
+    }
+
     router.replace('/student/examination/verification')
   }
 
