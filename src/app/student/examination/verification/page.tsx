@@ -49,7 +49,7 @@ export default function VerificationPage() {
           name: ticket?.candidate_name || personal.full_name || null,
           application: ticket?.application_number || app.application_number,
           roll: ticket?.roll_number || null,
-          exam: ticket?.exam_name || 'Common Entrance Examination',
+          exam: ticket?.exam_name || null,
           date: ticket?.exam_date || null,
           session: ticket?.exam_time || null,
           center: ticket?.exam_center_name || null,

@@ -70,13 +70,13 @@ export default function CandidateLoginPage() {
         <div className="flex min-h-[154px] items-stretch justify-between">
           <div className="flex flex-1 flex-col justify-center px-5 py-5 sm:px-8">
             <p className="text-base font-medium sm:text-lg">System Name :</p>
-            <p className="mt-1 text-4xl font-semibold leading-none text-[#fff500] sm:text-5xl">C001</p>
+            <p className="mt-1 text-3xl font-semibold leading-none text-[#fff500] sm:text-4xl">Candidate Portal</p>
             <p className="mt-3 max-w-[430px] text-sm leading-5 sm:text-base">Contact invigilator if the Name and Photograph displayed on the screen is not yours</p>
           </div>
           <div className="flex w-[180px] shrink-0 flex-col items-end justify-center border-l border-white/20 px-4 py-4 text-right sm:w-[305px] sm:px-7">
             <p className="text-base sm:text-lg">Candidate Name :</p>
-            <p className="mt-1 text-3xl leading-none text-[#fff500] sm:text-4xl">John Smith</p>
-            <p className="mt-4 text-base sm:text-lg">Subject : <span className="text-[#fff500]">Mock Exam</span></p>
+            <p className="mt-1 text-2xl leading-none text-[#fff500] sm:text-3xl">Candidate Login</p>
+            <p className="mt-4 text-base sm:text-lg">Subject : <span className="text-[#fff500]">Secure Examination</span></p>
           </div>
           <div className="hidden w-[145px] items-center justify-center border-l-2 border-[#777] bg-white sm:flex">
             <div className="flex size-[104px] items-center justify-center border border-[#555] bg-[#f4f4f4] text-[#555]">
