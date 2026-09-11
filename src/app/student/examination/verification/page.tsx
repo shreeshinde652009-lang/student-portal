@@ -16,15 +16,19 @@ export default function VerificationPage() {
     let mounted = true
 
     async function loadCandidate() {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const user = sessionData.session?.user
-      if (!user) {
-        if (mounted) router.replace('/student/login')
-        return
-      }
+      try {
+        const sessionResult = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<null>(resolve => window.setTimeout(() => resolve(null), 5000)),
+        ])
+        const user = sessionResult && 'data' in sessionResult ? sessionResult.data.session?.user : null
+        if (!user) {
+          if (mounted) router.replace('/student/login')
+          return
+        }
 
-      const { data: app } = await supabase
-        .from('applications')
+        const { data: app } = await supabase
+          .from('applications')
         .select('id,application_number,personal_data')
         .eq('user_id', user.id)
         .maybeSingle()
@@ -52,6 +56,9 @@ export default function VerificationPage() {
           photo: ticket?.photo_path || null,
         })
         setLoading(false)
+      }
+      } catch {
+        if (mounted) router.replace('/student/login')
       }
     }
 
