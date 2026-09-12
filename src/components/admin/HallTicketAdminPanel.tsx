@@ -50,11 +50,30 @@ export function HallTicketAdminPanel({ applicationId, applicationNumber, candida
   const update = (key: keyof HallTicket, value: string) => setTicket((current) => ({ ...current, [key]: value }))
   const save = async (status: HallTicket['status']) => {
     setSaving(true); setMessage('')
-    const { data: { user } } = await createClient().auth.getUser()
-    const payload = { ...ticket, application_id: applicationId, status, updated_at: new Date().toISOString(), updated_by: user?.id }
-    const { error } = await createClient().from('hall_ticket_details').upsert(payload, { onConflict: 'application_id' })
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) {
+      setSaving(false)
+      setMessage('Unable to save Hall Ticket: your admin session has expired. Please sign in again.')
+      return
+    }
+    const { data: profile, error: profileError } = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle()
+    if (profileError || !['admin', 'super_admin'].includes(profile?.role || '')) {
+      setSaving(false)
+      setMessage(`Unable to save Hall Ticket: authenticated account is not an admin (${profileError?.message || 'role not found'}).`)
+      return
+    }
+    const { data: application, error: applicationError } = await supabase.from('applications').select('id').eq('id', applicationId).maybeSingle()
+    if (applicationError || !application) {
+      setSaving(false)
+      setMessage(`Unable to save Hall Ticket: application ${applicationId} was not found (${applicationError?.message || 'invalid application'}).`)
+      return
+    }
+    const payload = { ...ticket, application_id: application.id, status, updated_at: new Date().toISOString(), updated_by: session.user.id }
+    if (!payload.id) delete payload.id
+    const { error } = await supabase.from('hall_ticket_details').upsert(payload, { onConflict: 'application_id' })
     setSaving(false)
-    setMessage(error ? `Unable to save Hall Ticket: ${error.message}` : `Hall Ticket ${status === 'published' ? 'published' : 'saved as draft'}.`)
+    setMessage(error ? `Unable to save Hall Ticket: ${error.message} [${error.code || 'unknown'}${error.hint ? `; ${error.hint}` : ''}]` : `Hall Ticket ${status === 'published' ? 'published' : 'saved as draft'}.`)
     if (!error) setTicket((current) => ({ ...current, status }))
   }
   const remove = async () => {
