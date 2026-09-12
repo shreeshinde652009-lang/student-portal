@@ -27,34 +27,43 @@ export default function VerificationPage() {
           return
         }
 
-        const { data: app } = await supabase
+        const { data: applications, error: applicationsError } = await supabase
           .from('applications')
-        .select('id,application_number,personal_data')
-        .eq('user_id', user.id)
-        .maybeSingle()
-      if (!app) {
-        if (mounted) router.replace('/student/login')
-        return
-      }
+          .select('id,application_number,personal_data')
+          .eq('user_id', user.id)
 
-      const { data: ticket } = await supabase
-        .from('hall_ticket_details')
-        .select('candidate_name,application_number,roll_number,exam_name,exam_date,exam_time,exam_center_name,photo_path')
-        .eq('application_id', app.id)
-        .maybeSingle()
-      const personal = (app.personal_data || {}) as Record<string, string>
+        if (applicationsError || !applications?.length) {
+          if (mounted) router.replace('/student/login')
+          return
+        }
 
-      if (mounted) {
-        setCandidate({
-          name: ticket?.candidate_name || personal.full_name || null,
-          application: ticket?.application_number || app.application_number,
-          roll: ticket?.roll_number || null,
-          exam: ticket?.exam_name || null,
-          date: ticket?.exam_date || null,
-          session: ticket?.exam_time || null,
-          center: ticket?.exam_center_name || null,
-          photo: ticket?.photo_path || null,
-        })
+        const applicationIds = applications.map(application => application.id)
+        const { data: tickets, error: ticketsError } = await supabase
+          .from('hall_ticket_details')
+          .select('application_id,candidate_name,application_number,roll_number,exam_name,exam_date,exam_time,exam_center_name,photo_path,status')
+          .in('application_id', applicationIds)
+
+        const ticket = tickets?.find(candidateTicket => candidateTicket.status === 'published')
+        const app = applications.find(application => application.id === ticket?.application_id)
+
+        if (ticketsError || !ticket || !app) {
+          if (mounted) router.replace('/student/login')
+          return
+        }
+
+        const personal = (app.personal_data || {}) as Record<string, string>
+
+        if (mounted) {
+          setCandidate({
+            name: ticket.candidate_name || personal.full_name || null,
+            application: ticket.application_number || app.application_number,
+            roll: ticket.roll_number || null,
+            exam: ticket.exam_name || null,
+            date: ticket.exam_date || null,
+            session: ticket.exam_time || null,
+            center: ticket.exam_center_name || null,
+            photo: ticket.photo_path || null,
+          })
         setLoading(false)
       }
       } catch {

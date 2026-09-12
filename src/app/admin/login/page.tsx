@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { ShieldCheck, AlertCircle, Loader2, ArrowLeft, KeyRound } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminLoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -26,7 +28,7 @@ export default function AdminLoginPage() {
     try {
       await signInWithEmailAndPassword(auth, email, password);
       sessionStorage.setItem('isAdmin', 'true');
-      window.location.href = '/admin/dashboard';
+      router.replace('/admin/dashboard');
     } catch (err: unknown) {
       console.error('Admin login error:', err);
       const authError = err as { message?: string };
