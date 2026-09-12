@@ -33,26 +33,32 @@ export default function CandidateLoginPage() {
       return
     }
 
-    const { data: application, error: applicationError } = await supabase
+    const { data: applications, error: applicationError } = await supabase
       .from('applications')
       .select('id')
       .eq('user_id', sessionData.session.user.id)
-      .maybeSingle()
 
-    if (applicationError || !application) {
+    if (applicationError || !applications?.length) {
       await supabase.auth.signOut()
       setLoading(false)
       setMessage('Roll Number does not match this candidate.')
       return
     }
 
-    const { data: ticket, error: ticketError } = await supabase
+    const applicationIds = applications.map(application => application.id)
+    const { data: tickets, error: ticketError } = await supabase
       .from('hall_ticket_details')
-      .select('application_id, roll_number')
-      .eq('application_id', application.id)
-      .maybeSingle()
+      .select('application_id, roll_number, status')
+      .in('application_id', applicationIds)
 
-    if (ticketError || !ticket || ticket.roll_number.trim().toLowerCase() !== rollNumber.trim().toLowerCase()) {
+    const normalizedRollNumber = rollNumber.trim().toLowerCase()
+    const ticket = tickets?.find(candidateTicket =>
+      candidateTicket.status === 'published' &&
+      typeof candidateTicket.roll_number === 'string' &&
+      candidateTicket.roll_number.trim().toLowerCase() === normalizedRollNumber,
+    )
+
+    if (ticketError || !ticket) {
       await supabase.auth.signOut()
       setLoading(false)
       setMessage('Roll Number does not match this candidate.')
