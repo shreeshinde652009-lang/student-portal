@@ -30,8 +30,11 @@ export function ExamAdminPanel() {
 
   const selectExam = async (exam: Exam) => {
     setSelected(exam); setCode(exam.code); setTitle(exam.title); setDescription(exam.description ?? ''); setDuration(String(exam.duration_minutes)); setPassingMarks(String(exam.passing_marks));
-    const { data } = await createClient().from('exam_questions').select('id,question_text,options,correct_option,marks,sort_order').eq('exam_id', exam.id).order('sort_order');
+    const client = createClient();
+    const { data, error } = await client.from('exam_questions').select('id,question_text,options,correct_option,marks,sort_order').eq('exam_id', exam.id).order('sort_order');
+    if (error) { setNotice(`Unable to load questions: ${error.message}`); setQuestions([]); return; }
     setQuestions((data ?? []).map((item) => ({ ...item, options: Array.isArray(item.options) ? item.options as string[] : [] })));
+    if (!data?.length) setNotice('No saved questions found for this exam. Add a question and save.');
   };
 
   const saveExam = async (publish?: boolean) => {
@@ -49,10 +52,18 @@ export function ExamAdminPanel() {
     for (let index = 0; index < validQuestions.length; index += 1) {
       const question = validQuestions[index];
       const questionPayload = { exam_id: exam.id, question_text: question.question_text.trim(), options: question.options.filter((option) => option.trim()), correct_option: question.correct_option.trim(), marks: Math.max(1, Number(question.marks) || 1), sort_order: index };
-      if (question.id) await client.from('exam_questions').update(questionPayload).eq('id', question.id);
-      else if (question.question_text.trim()) await client.from('exam_questions').insert(questionPayload);
+      const questionResult = question.id
+        ? await client.from('exam_questions').update(questionPayload).eq('id', question.id).select('id').single()
+        : await client.from('exam_questions').insert(questionPayload).select('id').single();
+      if (questionResult.error || !questionResult.data) {
+        setNotice(`Exam saved, but question ${index + 1} was not saved: ${questionResult.error?.message ?? 'unknown database error'}`);
+        return;
+      }
     }
-    setNotice(publish ? 'Exam published.' : 'Exam saved as draft.'); setSelected(exam); await load();
+    const { data: savedQuestions, error: reloadError } = await client.from('exam_questions').select('id,question_text,options,correct_option,marks,sort_order').eq('exam_id', exam.id).order('sort_order');
+    if (reloadError) { setNotice(`Exam saved, but questions could not be reloaded: ${reloadError.message}`); return; }
+    setQuestions((savedQuestions ?? []).map((item) => ({ ...item, options: Array.isArray(item.options) ? item.options as string[] : [] })));
+    setNotice(publish ? 'Exam and questions published.' : 'Exam and questions saved as draft.'); setSelected(exam); await load();
   };
 
   if (loading) return <p className="text-sm text-slate-500">Loading exams…</p>;
