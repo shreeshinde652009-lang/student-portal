@@ -37,16 +37,18 @@ export function ExamAdminPanel() {
   const saveExam = async (publish?: boolean) => {
     setNotice('');
     const client = createClient();
-    const totalMarks = questions.reduce((sum, question) => sum + Math.max(1, Number(question.marks) || 1), 0);
+    const validQuestions = questions.filter((question) => question.question_text.trim() && question.options.filter((option) => option.trim()).length >= 2 && question.correct_option.trim());
+    const totalMarks = validQuestions.reduce((sum, question) => sum + Math.max(1, Number(question.marks) || 1), 0);
     const payload = { code: code.trim().toUpperCase(), title: title.trim(), description: description.trim() || null, duration_minutes: Math.min(600, Math.max(1, Number(duration) || 60)), total_marks: totalMarks, passing_marks: Math.min(totalMarks, Math.max(0, Number(passingMarks) || 0)), is_published: publish ?? selected?.is_published ?? false, updated_at: new Date().toISOString() };
     if (!payload.code) { setNotice('Enter a unique exam code.'); return; }
     if (!payload.title) { setNotice('Enter an exam title.'); return; }
+    if (validQuestions.length === 0 || totalMarks <= 0) { setNotice('Add at least one complete question with a correct answer before saving.'); return; }
     const result = selected ? await client.from('exams').update(payload).eq('id', selected.id).select().single() : await client.from('exams').insert(payload).select().single();
     if (result.error || !result.data) { setNotice(result.error?.message ?? 'Unable to save exam.'); return; }
     const exam = result.data as Exam;
-    for (let index = 0; index < questions.length; index += 1) {
-      const question = questions[index];
-      const questionPayload = { exam_id: exam.id, question_text: question.question_text.trim(), options: question.options, correct_option: question.correct_option, marks: Math.max(1, Number(question.marks) || 1), sort_order: index };
+    for (let index = 0; index < validQuestions.length; index += 1) {
+      const question = validQuestions[index];
+      const questionPayload = { exam_id: exam.id, question_text: question.question_text.trim(), options: question.options.filter((option) => option.trim()), correct_option: question.correct_option.trim(), marks: Math.max(1, Number(question.marks) || 1), sort_order: index };
       if (question.id) await client.from('exam_questions').update(questionPayload).eq('id', question.id);
       else if (question.question_text.trim()) await client.from('exam_questions').insert(questionPayload);
     }
