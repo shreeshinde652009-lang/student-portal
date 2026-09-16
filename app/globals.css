@@ -160,6 +160,7 @@
 
 .announcement-track {
   animation: announcement-scroll 22s linear infinite;
+  will-change: transform;
 }
 
 .announcement-track:hover,
