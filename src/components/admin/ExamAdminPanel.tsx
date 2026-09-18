@@ -5,10 +5,12 @@ import { createClient } from '@/lib/supabase';
 
 type Exam = { id: string; code: string; title: string; description: string | null; duration_minutes: number; total_marks: number; passing_marks: number; is_published: boolean };
 const EXAM_SECTIONS = [
-  { name: 'Computer MCQ', questionLimit: 125, markLimit: 125 },
-  { name: 'General Knowledge', questionLimit: 125, markLimit: 125 },
-  { name: 'Image Identification', questionLimit: 25, markLimit: 25 },
-  { name: 'Computer Full Forms', questionLimit: 25, markLimit: 25 },
+  { name: 'Computer Fundamentals', questionLimit: 50, markLimit: 50 },
+  { name: 'General Knowledge & Digital Awareness', questionLimit: 50, markLimit: 50 },
+  { name: 'Internet & Networking', questionLimit: 50, markLimit: 50 },
+  { name: 'Linux & Operating System Basics', questionLimit: 50, markLimit: 50 },
+  { name: 'MS Office & Digital Skills', questionLimit: 50, markLimit: 50 },
+  { name: 'Programming Basics', questionLimit: 50, markLimit: 50 },
 ] as const;
 type Difficulty = 'very_easy' | 'easy' | 'basic_thinking';
 type Question = { id?: string; sourceId?: string; question_number: number; section: string; category: string; difficulty: Difficulty; prompt: string; options: string[]; correct_option: string; marks: number };
