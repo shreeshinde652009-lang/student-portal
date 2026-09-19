@@ -54,6 +54,9 @@ export function ExamSchedule() {
     const { data: questionRows, error: questionError } = await client.from('exam_questions').select('id,question_number,prompt,options,marks').eq('day_id', day.id).order('question_number');
     if (questionError) return setMessage(questionError.message);
     setQuestions((questionRows ?? []) as Question[]);
+    const { data: savedAnswers, error: answersError } = await client.from('exam_answers').select('question_id,selected_option').eq('attempt_id', nextAttempt.attempt_id);
+    if (answersError) return setMessage(`Unable to restore saved answers: ${answersError.message}`);
+    setAnswers(Object.fromEntries((savedAnswers ?? []).filter((answer: { question_id: string; selected_option: string | null }) => answer.selected_option).map((answer: { question_id: string; selected_option: string | null }) => [answer.question_id, answer.selected_option as string])));
     setAttempt(nextAttempt);
   };
   const saveAnswer = async (questionId: string, option: string) => {
