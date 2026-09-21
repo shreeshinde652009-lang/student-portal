@@ -9,9 +9,10 @@ type Question = { id: string; question_number: number; prompt: string; options: 
 type Attempt = { attempt_id: string; expires_at: string; status: string; started_at?: string };
 const EXPECTED_DAY_QUESTION_COUNT = 50;
 
-export function ExamSchedule() {
+type ExamScheduleProps = { examId: string };
+
+export function ExamSchedule({ examId }: ExamScheduleProps) {
   const client = createClient();
-  const [examId, setExamId] = useState<string | null>(null);
   const [days, setDays] = useState<Day[]>([]);
   const [completed, setCompleted] = useState<string[]>([]);
   const [message, setMessage] = useState('');
@@ -23,16 +24,13 @@ export function ExamSchedule() {
   const today = new Date().toISOString().slice(0, 10);
 
   const load = async () => {
-    const { data: exam } = await client.from('exams').select('id').eq('code', 'CET-2026').eq('is_published', true).maybeSingle();
-    if (!exam) return;
-    setExamId(exam.id);
-    const { data: dayRows } = await client.from('exam_days').select('id,day_number,title,scheduled_date,start_time,end_time,duration_minutes').eq('exam_id', exam.id).eq('is_published', true).order('day_number');
+    const { data: dayRows } = await client.from('exam_days').select('id,day_number,title,scheduled_date,start_time,end_time,duration_minutes').eq('exam_id', examId).eq('is_published', true).order('day_number');
     setDays(dayRows ?? []);
     const { data: { user } } = await client.auth.getUser();
     if (!user) return;
     const { data: application } = await client.from('applications').select('id').eq('user_id', user.id).maybeSingle();
     if (!application) return;
-    const { data: attempts } = await client.from('exam_attempts').select('exam_day_id,status').eq('application_id', application.id).eq('exam_id', exam.id);
+    const { data: attempts } = await client.from('exam_attempts').select('exam_day_id,status').eq('application_id', application.id).eq('exam_id', examId);
     setCompleted((attempts ?? []).filter((row: { status: string }) => ['submitted', 'completed', 'expired'].includes(row.status)).map((row: { exam_day_id: string }) => row.exam_day_id));
   };
 
@@ -55,6 +53,7 @@ export function ExamSchedule() {
     if (!application) return setMessage('A valid application is required before starting.');
     const { data, error } = await client.rpc('start_exam_day', { p_exam_day_id: day.id, p_application_id: application.id });
     if (error) return setMessage(error.message);
+    console.log('[v0] CET exam flow start', { exam_id: examId, day_id: day.id, attempt_id: (data as Attempt)?.attempt_id, status: (data as Attempt)?.status });
     const nextAttempt = data as Attempt;
     if (nextAttempt.status === 'submitted') {
       setActiveDay(null);
@@ -64,6 +63,7 @@ export function ExamSchedule() {
     const { data: questionRows, error: questionError } = await client.from('exam_questions').select('id,question_number,prompt,options,marks').eq('exam_id', examId).eq('day_id', day.id).order('question_number');
     if (questionError) return setMessage(questionError.message);
     const dayQuestions = (questionRows ?? []) as Question[];
+    console.log('[v0] CET day question load', { exam_id: examId, day_id: day.id, attempt_id: nextAttempt.attempt_id, count: dayQuestions.length, question_ids: dayQuestions.slice(0, 5).map((question) => question.id), question_numbers: dayQuestions.slice(0, 5).map((question) => question.question_number) });
     if (dayQuestions.length !== EXPECTED_DAY_QUESTION_COUNT) return setMessage(`Day ${day.day_number} is not ready: expected 50 assigned questions, found ${dayQuestions.length}.`);
     setQuestions(dayQuestions);
     const { data: savedAnswers, error: answersError } = await client.from('exam_answers').select('question_id,selected_option').eq('attempt_id', nextAttempt.attempt_id);
