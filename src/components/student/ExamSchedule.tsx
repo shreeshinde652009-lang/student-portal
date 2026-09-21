@@ -34,7 +34,7 @@ export function ExamSchedule({ examId }: ExamScheduleProps) {
     setCompleted((attempts ?? []).filter((row: { status: string }) => ['submitted', 'completed', 'expired'].includes(row.status)).map((row: { exam_day_id: string }) => row.exam_day_id));
   };
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void load(); }, [examId]);
   useEffect(() => {
     if (!attempt) return;
     const tick = () => setSecondsLeft(Math.max(0, Math.floor((new Date(attempt.expires_at).getTime() - Date.now()) / 1000)));
@@ -53,17 +53,15 @@ export function ExamSchedule({ examId }: ExamScheduleProps) {
     if (!application) return setMessage('A valid application is required before starting.');
     const { data, error } = await client.rpc('start_exam_day', { p_exam_day_id: day.id, p_application_id: application.id });
     if (error) return setMessage(error.message);
-    console.log('[v0] CET exam flow start', { exam_id: examId, day_id: day.id, attempt_id: (data as Attempt)?.attempt_id, status: (data as Attempt)?.status });
     const nextAttempt = data as Attempt;
     if (nextAttempt.status === 'submitted') {
       setActiveDay(null);
       return setMessage('This exam day has already been submitted. No second attempt is allowed.');
     }
     if (!examId) return setMessage('The CET examination is not available.');
-    const { data: questionRows, error: questionError } = await client.from('exam_questions').select('id,question_number,prompt,options,marks').eq('exam_id', examId).eq('day_id', day.id).order('question_number');
+    const { data: questionRows, error: questionError } = await client.from('exam_questions').select('id,question_number,prompt,options,marks').eq('exam_id', examId).eq('day_id', day.id).order('question_number').limit(EXPECTED_DAY_QUESTION_COUNT);
     if (questionError) return setMessage(questionError.message);
     const dayQuestions = (questionRows ?? []) as Question[];
-    console.log('[v0] CET day question load', { exam_id: examId, day_id: day.id, attempt_id: nextAttempt.attempt_id, count: dayQuestions.length, question_ids: dayQuestions.slice(0, 5).map((question) => question.id), question_numbers: dayQuestions.slice(0, 5).map((question) => question.question_number) });
     if (dayQuestions.length !== EXPECTED_DAY_QUESTION_COUNT) return setMessage(`Day ${day.day_number} is not ready: expected 50 assigned questions, found ${dayQuestions.length}.`);
     setQuestions(dayQuestions);
     const { data: savedAnswers, error: answersError } = await client.from('exam_answers').select('question_id,selected_option').eq('attempt_id', nextAttempt.attempt_id);
