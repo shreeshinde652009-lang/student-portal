@@ -10,6 +10,10 @@ export async function POST(request: Request) {
   const message = typeof body?.message === 'string' ? body.message.trim().slice(0, 1200) : ''
   if (!message) return Response.json({ error: 'Message is required' }, { status: 400 })
 
+  const { data: activeAttempt } = await supabase.from('exam_attempts').select('id,expires_at,status').eq('user_id', user.id).eq('status', 'active').gt('expires_at', new Date().toISOString()).limit(1).maybeSingle()
+  const asksForAnswer = /answer|option|solve|hint|correct|question\s*\d+/i.test(message)
+  if (activeAttempt && asksForAnswer) return Response.json({ answer: "I can help with portal or technical support, but I can't provide answers or hints for an active exam question." })
+
   const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
   if (profile?.role && profile.role !== 'student') return Response.json({ error: 'Student access required' }, { status: 403 })
 
