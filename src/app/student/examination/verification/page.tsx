@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getPublishedExamData, getPublishedExamDays, type ExamDay } from '@/lib/exam'
+import { StudentAiAssistant } from '@/components/StudentAiAssistant'
 
 type Candidate = Record<string, string | null>
 
@@ -96,7 +97,7 @@ export default function VerificationPage() {
   if (!candidate) return null
   const initials = (candidate.name || 'Candidate').split(' ').map(part => part[0]).slice(0, 2).join('').toUpperCase()
 
-  return <main className="min-h-[calc(100vh-9rem)] bg-[#eef3f8] px-4 py-8 sm:px-8">
+  return <><main className="min-h-[calc(100vh-9rem)] bg-[#eef3f8] px-4 py-8 sm:px-8">
     <section className="mx-auto max-w-6xl overflow-hidden border border-[#cbd5df] bg-white shadow-[0_18px_50px_rgba(18,59,93,0.12)]">
       <div className="border-b border-[#b8c3ce] bg-[#626466] px-5 py-4 text-white sm:px-8">
         <div className="flex flex-wrap items-center justify-between gap-5">
@@ -106,5 +107,5 @@ export default function VerificationPage() {
       </div>
       <div className="p-5 sm:p-8"><p className="text-xs font-bold uppercase tracking-[0.2em] text-[#2b7a78]">Secure identity check</p><h2 className="mt-2 text-3xl font-bold text-[#173b5b]">Candidate Verification</h2><div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{Object.entries({ 'Application Number': candidate.application, 'Roll Number': candidate.roll, Examination: candidate.exam, 'Exam Center': candidate.center, 'Exam Date': candidate.date, Session: candidate.session }).map(([label, value]) => <div key={label} className="border border-[#d8e1e9] bg-[#f6f8fa] p-4"><p className="text-xs font-bold uppercase tracking-wider text-[#718092]">{label}</p><p className="mt-2 font-semibold text-[#173b5b]">{value || 'Not available'}</p></div>)}</div><div className="mt-8"><p className="text-sm font-bold text-[#173b5b]">Select examination day</p><div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{days.map(day => <button key={day.id} onClick={() => router.push(`/student/examination/instructions?examId=${examId}&dayId=${day.id}`)} className="rounded border border-[#d8e1e9] bg-[#f6f8fa] p-4 text-left transition hover:border-[#2b7a78] hover:bg-[#edf8f6]"><span className="text-xs font-bold uppercase tracking-wider text-[#718092]">Day {day.day_number}</span><span className="mt-1 block font-semibold text-[#173b5b]">{day.title}</span><span className="mt-1 block text-xs text-[#637383]">{day.duration_minutes} minutes · 50 questions</span></button>)}</div>{!days.length && <p className="mt-3 text-sm text-[#a15c16]">No examination days are currently published.</p>}</div></div>
     </section>
-  </main>
+  </main><StudentAiAssistant /></>
 }
