@@ -50,6 +50,11 @@ export default function AttemptPage() {
         setQuestions(result.questions)
         setAttemptId(attempt.attempt_id)
         setSeconds(Math.max(0, Math.floor((new Date(attempt.expires_at).getTime() - Date.now()) / 1000)))
+        const { data: savedAnswers } = await supabase.from('exam_answers').select('question_id,selected_option,marked_for_review').eq('attempt_id', attempt.attempt_id)
+        setAnswers(Object.fromEntries((savedAnswers || []).map((saved) => [saved.question_id, { selected_option: saved.selected_option, marked_for_review: Boolean(saved.marked_for_review) }])))
+        const { data: savedAttempt } = await supabase.from('exam_attempts').select('current_question,status').eq('id', attempt.attempt_id).maybeSingle()
+        if (savedAttempt?.status === 'submitted') throw new Error('This examination attempt has already been submitted.')
+        if (typeof savedAttempt?.current_question === 'number') setCurrent(Math.min(savedAttempt.current_question, Math.max(0, result.questions.length - 1)))
       } catch (loadError) {
         setError(loadError instanceof Error ? loadError.message : 'Unable to start examination.')
       } finally {
@@ -61,9 +66,14 @@ export default function AttemptPage() {
   const submit = useCallback(async () => {
     if (!attemptId || submitting) return
     setSubmitting(true)
-    const { data } = await createClient().rpc('submit_exam_attempt', { p_attempt_id: attemptId })
+    const { data, error: submitError } = await createClient().rpc('submit_exam_attempt', { p_attempt_id: attemptId })
+    if (submitError) {
+      setError(submitError.message)
+      setSubmitting(false)
+      return
+    }
     const result = data?.[0]
-    router.replace(result ? `/exam/result/${attemptId}?score=${result.score}&total=${result.total_marks}&status=${result.status}` : `/exam/result/${attemptId}`)
+    router.replace(result ? `/exam/result/${attemptId}?status=${result.status}` : `/exam/result/${attemptId}`)
   }, [attemptId, router, submitting])
 
   useEffect(() => {
@@ -72,11 +82,23 @@ export default function AttemptPage() {
     return () => window.clearInterval(timer)
   }, [attemptId, submitting, seconds])
 
+  useEffect(() => {
+    if (seconds !== 0 || !attemptId || submitting) return
+    void submit()
+  }, [attemptId, seconds, submitting, submit])
+
   async function saveAnswer(questionId: string, patch: Partial<Answer>) {
     if (!attemptId) return
     const next = { selected_option: answers[questionId]?.selected_option || null, marked_for_review: answers[questionId]?.marked_for_review || false, ...patch }
     setAnswers((items) => ({ ...items, [questionId]: next }))
-    await createClient().from('exam_answers').upsert({ attempt_id: attemptId, question_id: questionId, ...next }, { onConflict: 'attempt_id,question_id' })
+    const { error: saveError } = await createClient().rpc('save_exam_answer', {
+      p_attempt_id: attemptId,
+      p_question_id: questionId,
+      p_selected_option: next.selected_option || '',
+      p_marked_for_review: next.marked_for_review,
+      p_current_question: current,
+    })
+    if (saveError) setError(saveError.message)
   }
 
   const minutes = String(Math.floor(seconds / 60)).padStart(2, '0')
