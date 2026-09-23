@@ -1,15 +1,17 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { getExamData, type Exam, type Question } from '@/lib/exam'
+import { getExamData, getExamDayData, type Exam, type Question } from '@/lib/exam'
 
 type Answer = { selected_option: string | null; marked_for_review: boolean }
 
 export default function AttemptPage() {
   const { examId } = useParams<{ examId: string }>()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const dayId = searchParams.get('dayId')
   const [exam, setExam] = useState<Exam | null>(null)
   const [questions, setQuestions] = useState<Question[]>([])
   const [answers, setAnswers] = useState<Record<string, Answer>>({})
@@ -29,17 +31,22 @@ export default function AttemptPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return router.replace('/student/login')
       try {
-        const result = await getExamData(examId)
-        if (!result.exam || !result.questions.length) throw new Error('This examination is not currently available.')
+        const result = dayId ? await getExamDayData(dayId) : await getExamData(examId)
+        const examResult = await getExamData(examId)
+        const exam = examResult.exam
+        if (dayId && (!('day' in result) || !result.day || !result.questions.length)) throw new Error('This examination day is not currently available.')
+        if (!dayId && (!('exam' in result) || !result.exam || !result.questions.length)) throw new Error('This examination is not currently available.')
         const { data: applications } = await supabase.from('applications').select('id').eq('user_id', user.id)
         const ids = (applications || []).map((item) => item.id)
         const { data: tickets } = await supabase.from('hall_ticket_details').select('application_id,status').in('application_id', ids)
         const applicationId = tickets?.find((ticket) => ticket.status === 'published')?.application_id
         if (!applicationId) throw new Error('No published hall ticket is linked to this candidate.')
-        const { data: started, error: startError } = await supabase.rpc('start_exam_attempt', { p_exam_id: examId, p_application_id: applicationId })
+        const { data: started, error: startError } = dayId
+          ? await supabase.rpc('start_exam_day_attempt', { p_exam_day_id: dayId, p_application_id: applicationId })
+          : await supabase.rpc('start_exam_attempt', { p_exam_id: examId, p_application_id: applicationId })
         const attempt = started?.[0]
         if (startError || !attempt?.attempt_id) throw new Error(startError?.message || 'The secure examination session could not be started.')
-        setExam(result.exam)
+        setExam(exam)
         setQuestions(result.questions)
         setAttemptId(attempt.attempt_id)
         setSeconds(Math.max(0, Math.floor((new Date(attempt.expires_at).getTime() - Date.now()) / 1000)))
@@ -49,7 +56,7 @@ export default function AttemptPage() {
         setLoading(false)
       }
     })()
-  }, [examId, router])
+  }, [dayId, examId, router])
 
   const submit = useCallback(async () => {
     if (!attemptId || submitting) return

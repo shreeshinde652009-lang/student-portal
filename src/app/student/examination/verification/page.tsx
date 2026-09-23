@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { getPublishedExamData, getPublishedExamDays, type ExamDay } from '@/lib/exam'
 
 type Candidate = Record<string, string | null>
 
@@ -10,6 +11,8 @@ export default function VerificationPage() {
   const router = useRouter()
   const [candidate, setCandidate] = useState<Candidate | null>(null)
   const [loading, setLoading] = useState(true)
+  const [days, setDays] = useState<ExamDay[]>([])
+  const [examId, setExamId] = useState<string | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
@@ -53,7 +56,12 @@ export default function VerificationPage() {
 
         const personal = (app.personal_data || {}) as Record<string, string>
 
+        const { exam } = await getPublishedExamData()
+        if (!exam) throw new Error('Published examination not found.')
+        const publishedDays = await getPublishedExamDays(exam.id)
         if (mounted) {
+          setExamId(exam.id)
+          setDays(publishedDays)
           setCandidate({
             name: ticket.candidate_name || personal.full_name || null,
             application: ticket.application_number || app.application_number,
@@ -96,7 +104,7 @@ export default function VerificationPage() {
           <div className="flex items-center gap-4"><div className="text-right"><p className="text-xs text-white/75">Candidate Name</p><p className="text-xl font-bold text-[#f4c430]">{candidate.name || 'Candidate'}</p><p className="text-xs text-white/75">Roll Number: {candidate.roll || '—'}</p></div><div className="flex size-20 items-center justify-center overflow-hidden border-2 border-white bg-[#e8edf2] text-2xl font-bold text-[#123b5d]">{candidate.photo ? <img src={candidate.photo} alt="Candidate" className="size-full object-cover" /> : initials}</div></div>
         </div>
       </div>
-      <div className="p-5 sm:p-8"><p className="text-xs font-bold uppercase tracking-[0.2em] text-[#2b7a78]">Secure identity check</p><h2 className="mt-2 text-3xl font-bold text-[#173b5b]">Candidate Verification</h2><div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{Object.entries({ 'Application Number': candidate.application, 'Roll Number': candidate.roll, Examination: candidate.exam, 'Exam Center': candidate.center, 'Exam Date': candidate.date, Session: candidate.session }).map(([label, value]) => <div key={label} className="border border-[#d8e1e9] bg-[#f6f8fa] p-4"><p className="text-xs font-bold uppercase tracking-wider text-[#718092]">{label}</p><p className="mt-2 font-semibold text-[#173b5b]">{value || 'Not available'}</p></div>)}</div><button onClick={() => router.push('/student/examination/instructions')} className="mt-8 rounded-sm bg-[#2b7a78] px-6 py-3 font-bold text-white hover:bg-[#216462]">Continue to Instructions</button></div>
+      <div className="p-5 sm:p-8"><p className="text-xs font-bold uppercase tracking-[0.2em] text-[#2b7a78]">Secure identity check</p><h2 className="mt-2 text-3xl font-bold text-[#173b5b]">Candidate Verification</h2><div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{Object.entries({ 'Application Number': candidate.application, 'Roll Number': candidate.roll, Examination: candidate.exam, 'Exam Center': candidate.center, 'Exam Date': candidate.date, Session: candidate.session }).map(([label, value]) => <div key={label} className="border border-[#d8e1e9] bg-[#f6f8fa] p-4"><p className="text-xs font-bold uppercase tracking-wider text-[#718092]">{label}</p><p className="mt-2 font-semibold text-[#173b5b]">{value || 'Not available'}</p></div>)}</div><div className="mt-8"><p className="text-sm font-bold text-[#173b5b]">Select examination day</p><div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{days.map(day => <button key={day.id} onClick={() => router.push(`/student/examination/instructions?examId=${examId}&dayId=${day.id}`)} className="rounded border border-[#d8e1e9] bg-[#f6f8fa] p-4 text-left transition hover:border-[#2b7a78] hover:bg-[#edf8f6]"><span className="text-xs font-bold uppercase tracking-wider text-[#718092]">Day {day.day_number}</span><span className="mt-1 block font-semibold text-[#173b5b]">{day.title}</span><span className="mt-1 block text-xs text-[#637383]">{day.duration_minutes} minutes · 50 questions</span></button>)}</div>{!days.length && <p className="mt-3 text-sm text-[#a15c16]">No examination days are currently published.</p>}</div></div>
     </section>
   </main>
 }
