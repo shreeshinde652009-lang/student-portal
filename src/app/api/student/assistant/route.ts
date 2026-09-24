@@ -14,8 +14,13 @@ export async function POST(request: Request) {
   const asksForAnswer = /answer|option|solve|hint|correct|question\s*\d+/i.test(message)
   if (activeAttempt && asksForAnswer) return Response.json({ answer: "I can help with portal or technical support, but I can't provide answers or hints for an active exam question." })
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle()
-  if (profile?.role && profile.role !== 'student') return Response.json({ error: 'Student access required' }, { status: 403 })
+  const { data: application, error: applicationError } = await supabase
+    .from('applications')
+    .select('id')
+    .eq('user_id', user.id)
+    .limit(1)
+    .maybeSingle()
+  if (applicationError || !application) return Response.json({ error: 'Student access required' }, { status: 403 })
 
   const result = await generateText({
     model: 'openai/gpt-5-mini',

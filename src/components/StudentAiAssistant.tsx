@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react'
 import { Bot, Loader2, Minimize2, Send, X } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 type Message = { role: 'user' | 'assistant'; content: string }
 
@@ -24,8 +25,13 @@ export function StudentAiAssistant() {
     setMessages((current) => [...current, { role: 'user', content: message }])
     setLoading(true)
     try {
-      const response = await fetch('/api/student/assistant', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message }) })
+      const { data: { session } } = await createClient().auth.getSession()
+      if (!session?.user) {
+        throw new Error('Please login again to use Student Help.')
+      }
+      const response = await fetch('/api/student/assistant', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ message }) })
       const payload = await response.json().catch(() => null)
+      if (response.status === 401) throw new Error('Please login again to use Student Help.')
       if (!response.ok) throw new Error(payload?.error || 'Unable to reach the student assistant.')
       setMessages((current) => [...current, { role: 'assistant', content: payload.answer || 'I could not generate a response right now.' }])
     } catch (requestError) {
@@ -37,7 +43,7 @@ export function StudentAiAssistant() {
 
   return <div className="fixed bottom-4 right-4 z-50 sm:bottom-6 sm:right-6">
     {open && !minimized && <section aria-label="AI Student Help" className="mb-3 flex h-[min(32rem,calc(100vh-7rem))] w-[min(22rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
-      <header className="flex items-center justify-between bg-[#173f63] px-4 py-3 text-white"><div className="flex items-center gap-2"><Bot className="size-5 text-amber-300" /><div><h2 className="text-sm font-bold">AI Student Help</h2><p className="text-[11px] text-blue-100">Exam &amp; Student Portal Assistance</p></div></div><div className="flex items-center gap-1"><button type="button" aria-label="Minimize AI Student Help" onClick={() => setMinimized(true)} className="rounded p-1.5 hover:bg-white/10"><Minimize2 className="size-4" /></button><button type="button" aria-label="Close AI Student Help" onClick={() => setOpen(false)} className="rounded p-1.5 hover:bg-white/10"><X className="size-4" /></button></div></header>
+      <header className="flex items-center justify-between bg-[#173f63] px-4 py-3 text-white"><div className="flex items-center gap-2"><img src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/cet%20cell%20official%20logo-ksFpLuBb9FuJRnDFwVx4IrfSZWCkxd.png" alt="CET Cell Maharashtra" className="size-8 rounded-full bg-white object-contain" /><div><h2 className="text-sm font-bold">AI Student Help</h2><p className="text-[11px] text-blue-100">Exam &amp; Student Portal Assistance</p></div></div><div className="flex items-center gap-1"><button type="button" aria-label="Minimize AI Student Help" onClick={() => setMinimized(true)} className="rounded p-1.5 hover:bg-white/10"><Minimize2 className="size-4" /></button><button type="button" aria-label="Close AI Student Help" onClick={() => setOpen(false)} className="rounded p-1.5 hover:bg-white/10"><X className="size-4" /></button></div></header>
       <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 p-3" aria-live="polite">{messages.map((message, index) => <div key={`${message.role}-${index}`} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}><p className={`max-w-[88%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-5 ${message.role === 'user' ? 'rounded-br-sm bg-[#087f78] text-white' : 'rounded-bl-sm border border-slate-200 bg-white text-slate-700'}`}>{message.content}</p></div>)}{loading && <div className="flex items-center gap-2 text-xs text-slate-500"><Loader2 className="size-4 animate-spin" />Preparing a response...</div>}{error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700">{error}</p>}</div>
       <form onSubmit={sendMessage} className="flex gap-2 border-t border-slate-200 bg-white p-3"><label htmlFor="student-ai-message" className="sr-only">Message AI Student Help</label><input id="student-ai-message" value={input} onChange={(event) => setInput(event.target.value)} placeholder="Ask in Marathi or English..." className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#087f78] focus:ring-2 focus:ring-[#087f78]/20" /><button type="submit" disabled={!input.trim() || loading} aria-label="Send message" className="rounded-lg bg-[#087f78] px-3 text-white transition hover:bg-[#076b66] disabled:cursor-not-allowed disabled:opacity-50"><Send className="size-4" /></button></form>
     </section>}
