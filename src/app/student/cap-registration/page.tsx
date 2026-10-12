@@ -1,5 +1,5 @@
-import { StudentModulePage } from '@/components/student/StudentModulePage';
+import CapRegistration from '@/components/student/CapRegistration';
 
 export default function CapRegistrationPage() {
-  return <StudentModulePage settingKey="cap_registration_enabled" title="CAP Registration" description="Review your Centralized Admission Process registration and published allotment updates." tableName="cap_registrations" />;
+  return <CapRegistration />;
 }
