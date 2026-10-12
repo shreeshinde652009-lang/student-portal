@@ -8,6 +8,7 @@ const cards = [
   ['CET Registration', 'Register Now', FileText],
   ['Profile', 'Edit Profile', UserRound],
   ['CAP Registration', 'Register Now', ClipboardList],
+  ['Option Form', 'Open Option Form', ClipboardList],
   ['MOCK & Psychometric Test', 'Register Now', FileText],
   ['Help Desk', 'Create or Track Issues', Ticket],
   ['Hall Ticket or Admit Card', 'Get Hall Ticket', FileText],
@@ -40,6 +41,8 @@ export default function DashboardPage() {
   function openCard(title: string) {
     if (title === 'CET Registration') setCourseOpen(true)
     else if (title === 'Re-registration') window.location.href = '/dashboard/linux-cs-registration?mode=edit'
+    else if (title === 'CAP Registration') window.location.href = '/student/cap-registration'
+    else if (title === 'Option Form') window.location.href = '/student/option-form'
     else if (title === 'Hall Ticket or Admit Card') window.location.href = '/student/hall-ticket'
     else if (title === 'Score Card') window.location.href = '/student/score-card'
     else setActiveCard(title)
