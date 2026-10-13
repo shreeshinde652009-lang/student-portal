@@ -29,13 +29,18 @@ export function CapRegistration() {
       if (!user) { router.replace('/student/login'); return; }
       const [{ data: moduleSetting }, { data: setting }, { data: applications }, { data: courseRows }] = await Promise.all([
         supabase.from('module_settings').select('value').eq('key', 'cap_registration_enabled').maybeSingle(),
-        supabase.from('cap_settings').select('id, option_form_closes_at').eq('is_active', true).maybeSingle(),
+        supabase.from('cap_settings').select('id, registration_opens_at, registration_closes_at, option_form_opens_at, option_form_closes_at').eq('is_active', true).maybeSingle(),
         supabase.from('applications').select('id, status').eq('user_id', user.id).eq('status', 'APPROVED').limit(1),
         supabase.from('courses').select('id, name, code, college_id, colleges(name, code)').eq('status', 'active').order('name'),
       ]);
       const capEnabled = moduleSetting?.value === true || moduleSetting?.value === 'true';
       if (!capEnabled) { setError('CAP Registration is currently disabled by the CET Cell.'); setLoading(false); return; }
-      if (!setting) { setError('CAP registration is not currently open.'); setLoading(false); return; }
+      if (!setting) { setError('CAP registration is not configured yet. Please contact the CET Cell.'); setLoading(false); return; }
+      const now = Date.now();
+      const opensAt = setting.registration_opens_at ? new Date(setting.registration_opens_at).getTime() : null;
+      const closesAt = setting.registration_closes_at ? new Date(setting.registration_closes_at).getTime() : null;
+      if (opensAt !== null && now < opensAt) { setError(`CAP registration opens on ${new Date(setting.registration_opens_at).toLocaleString()}.`); setLoading(false); return; }
+      if (closesAt !== null && now > closesAt) { setError(`CAP registration closed on ${new Date(setting.registration_closes_at).toLocaleString()}.`); setLoading(false); return; }
       if (!applications?.[0]) { setError('CAP registration is available only after your application is approved by the CET Cell.'); setLoading(false); return; }
       setApplicationId(applications[0].id); setDeadline(setting.option_form_closes_at); setCourses((courseRows ?? []) as Course[]);
       const { data: existing } = await supabase.from('cap_registrations').select('id, status, cap_options(id, course_id, preference_rank, courses(id, name, code, college_id, colleges(name, code)))').eq('application_id', applications[0].id).maybeSingle();
