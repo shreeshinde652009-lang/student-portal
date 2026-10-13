@@ -27,12 +27,17 @@ export function CapRegistration() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace('/student/login'); return; }
-      const [{ data: moduleSetting }, { data: setting }, { data: applications }, { data: courseRows }] = await Promise.all([
+      const [moduleResult, settingResult, applicationsResult, coursesResult] = await Promise.all([
         supabase.from('module_settings').select('value').eq('key', 'cap_registration_enabled').maybeSingle(),
         supabase.from('cap_settings').select('id, registration_opens_at, registration_closes_at, option_form_opens_at, option_form_closes_at').eq('is_active', true).maybeSingle(),
         supabase.from('applications').select('id, status').eq('user_id', user.id).eq('status', 'APPROVED').limit(1),
         supabase.from('courses').select('id, name, code, college_id, colleges(name, code)').eq('status', 'active').order('name'),
       ]);
+      if (process.env.NODE_ENV === 'development') console.log('[v0] CAP setting diagnostics', { table: 'module_settings', key: 'cap_registration_enabled', rowExists: Boolean(moduleResult.data), value: moduleResult.data?.value, error: moduleResult.error?.message ?? null, supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL });
+      const moduleSetting = moduleResult.data;
+      const setting = settingResult.data;
+      const applications = applicationsResult.data;
+      const courseRows = coursesResult.data;
       const capEnabled = moduleSetting?.value === true || moduleSetting?.value === 'true';
       if (!capEnabled) { setError('CAP Registration is currently disabled by the CET Cell.'); setLoading(false); return; }
       if (!setting) { setError('CAP registration is not configured yet. Please contact the CET Cell.'); setLoading(false); return; }

@@ -61,7 +61,9 @@ export default function AdminPortal() {
       if (!user) { router.replace('/admin/login'); return; }
       const { data: profile } = await client.from('profiles').select('role').eq('id', user.id).single();
       if (!profile || !['admin', 'super_admin'].includes(profile.role)) { router.replace('/admin/login'); return; }
-      const { data: rows } = await client.from('module_settings').select('key, value');
+      const { data: rows, error: settingsError } = await client.from('module_settings').select('key, value');
+      if (settingsError) setError(`Unable to load module settings: ${settingsError.message}`);
+      if (process.env.NODE_ENV === 'development') console.log('[v0] Admin CAP setting diagnostics', { table: 'module_settings', key: 'cap_registration_enabled', rowExists: Boolean(rows?.some((row) => row.key === 'cap_registration_enabled')), value: rows?.find((row) => row.key === 'cap_registration_enabled')?.value, error: settingsError?.message ?? null, supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL });
       setModuleSettings(Object.fromEntries(((rows ?? []) as ModuleSetting[]).map((row) => [row.key, row.value])));
       await loadApplications();
       setReady(true);
@@ -83,7 +85,7 @@ export default function AdminPortal() {
   const updateModuleSetting = async (key: string, value: boolean) => {
     const client = createClient();
     const { error: updateError } = await client.from('module_settings').upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-    if (updateError) setError('Unable to update module setting.');
+    if (updateError) { setError(`Unable to update module setting: ${updateError.message}`); if (process.env.NODE_ENV === 'development') console.error('[v0] Admin CAP setting save failed', { key, error: updateError.message }); }
     else setModuleSettings((current) => ({ ...current, [key]: value }));
   };
 
