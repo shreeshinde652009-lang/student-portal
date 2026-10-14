@@ -33,7 +33,7 @@ export function CapRegistration() {
         supabase.from('applications').select('id, status').eq('user_id', user.id).eq('status', 'APPROVED').limit(1),
         supabase.from('courses').select('id, name, code, college_id, colleges(name, code)').eq('status', 'active').order('name'),
       ]);
-      if (process.env.NODE_ENV === 'development') console.log('[v0] CAP setting diagnostics', { table: 'module_settings', key: 'cap_registration_enabled', rowExists: Boolean(moduleResult.data), value: moduleResult.data?.value, error: moduleResult.error?.message ?? null, supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL });
+      if (process.env.NODE_ENV === 'development') console.log('[v0] CAP setting diagnostics', { rowReturned: Boolean(moduleResult.data), value: moduleResult.data?.value, valueType: typeof moduleResult.data?.value, queryError: Boolean(moduleResult.error), errorMessage: moduleResult.error?.message ?? null, errorCode: moduleResult.error?.code ?? null });
       const moduleSetting = moduleResult.data;
       const setting = settingResult.data;
       const applications = applicationsResult.data;
