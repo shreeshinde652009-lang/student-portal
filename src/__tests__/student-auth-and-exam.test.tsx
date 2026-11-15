@@ -7,6 +7,8 @@ import RegisterPage from '@/app/register/page';
 import StudentLoginPage from '@/app/student/login/page';
 import AdminLoginPage from '@/app/admin/login/page';
 import { ExamSchedule } from '@/components/student/ExamSchedule';
+import { QuestionBankPanel } from '@/components/admin/QuestionBankPanel';
+import { ExamAdminPanel } from '@/components/admin/ExamAdminPanel';
 
 const { createClientMock } = vi.hoisted(() => ({ createClientMock: vi.fn() }));
 vi.mock('@/lib/supabase', () => ({ createClient: createClientMock }));
@@ -118,6 +120,9 @@ function createMockSupabase(profileRole = 'admin') {
     },
     rpc: vi.fn(async (name: string, args: Record<string, unknown>) => {
       rpcCalls.push({ name, args });
+      if (name === 'admin_list_exam_questions') {
+        return { data: [{ id: 'question-1', exam_id: 'exam-1', question_number: 1, section: 'Linux', category: 'Systems', difficulty: 'easy', prompt: 'Question 1', options: ['A', 'B', 'C', 'D'], correct_option: 'A', marks: 1 }], error: null };
+      }
       if (name === 'start_exam_day_attempt') {
         return { data: [{ attempt_id: 'attempt-1', expires_at: new Date(Date.now() + 3_600_000).toISOString(), status: 'active' }], error: null };
       }
@@ -249,6 +254,19 @@ describe('migration compatibility', () => {
     expect(migration).toMatch(/GRANT UPDATE\s*\(\s*id\s*,/i);
   });
 
+  it('revokes stale column grants for roles and exam answer keys', () => {
+    expect(migration).toMatch(/REVOKE ALL\s*\(role\) ON TABLE public\.profiles FROM PUBLIC, anon, authenticated/i);
+    expect(migration).toMatch(/REVOKE ALL\s*\(correct_option\) ON TABLE public\.exam_questions FROM PUBLIC, anon, authenticated/i);
+    expect(migration).not.toMatch(/GRANT SELECT ON TABLE public\.exam_questions TO authenticated/i);
+    expect(migration).toMatch(/GRANT SELECT \(id, exam_id, day_id, question_number, section, category, difficulty, prompt, options, marks\)[\s\S]*?ON TABLE public\.exam_questions TO authenticated/i);
+  });
+
+  it('serves answer keys only through an authenticated admin-checked RPC', () => {
+    expect(migration).toMatch(/CREATE OR REPLACE FUNCTION public\.admin_list_exam_questions\(p_exam_id uuid DEFAULT NULL\)[\s\S]*?SECURITY DEFINER[\s\S]*?profile\.role IN \('admin', 'super_admin'\)[\s\S]*?question\.exam_id = p_exam_id/i);
+    expect(migration).toMatch(/GRANT EXECUTE ON FUNCTION public\.admin_list_exam_questions\(uuid\) TO authenticated/i);
+    expect(migration).toMatch(/REVOKE ALL PRIVILEGES ON FUNCTION public\.admin_list_exam_questions\(uuid\)[\s\S]*?FROM PUBLIC, anon, authenticated/i);
+  });
+
   it('keeps admin exam-day edits behind an admin-only RLS policy', () => {
     expect(migration).toContain('CREATE POLICY exam_days_admin_manage');
     expect(migration).toMatch(/profile\.role IN \('admin', 'super_admin'\)/i);
@@ -259,6 +277,28 @@ describe('migration compatibility', () => {
     expect(migration).toContain('REVOKE ALL PRIVILEGES ON FUNCTION public.start_exam_day(uuid, uuid)');
     expect(migration).toContain('REVOKE ALL PRIVILEGES ON FUNCTION public.save_exam_answer(uuid, uuid, text, boolean)');
     expect(migration).not.toContain('GRANT EXECUTE ON FUNCTION public.start_exam_day(uuid, uuid)');
+  });
+});
+
+describe('admin question bank', () => {
+  it('loads answer keys through the role-checked RPC instead of direct table reads', async () => {
+    const harness = createMockSupabase('admin');
+    createClientMock.mockReturnValue(harness.client);
+    render(<QuestionBankPanel />);
+
+    expect(await screen.findByText('All saved questions have valid answer keys')).toBeTruthy();
+    expect(harness.rpcCalls.some((call) => call.name === 'admin_list_exam_questions')).toBe(true);
+    expect(harness.queryCalls.some((call) => call.table === 'exam_questions')).toBe(false);
+  });
+
+  it('uses the same protected RPC for exam authoring answer keys', async () => {
+    const harness = createMockSupabase('admin');
+    createClientMock.mockReturnValue(harness.client);
+    render(<ExamAdminPanel />);
+
+    expect(await screen.findByRole('button', { name: 'New exam' })).toBeTruthy();
+    expect(harness.rpcCalls.some((call) => call.name === 'admin_list_exam_questions')).toBe(true);
+    expect(harness.queryCalls.some((call) => call.table === 'exam_questions')).toBe(false);
   });
 });
 

@@ -19,7 +19,7 @@ export function QuestionBankPanel() {
 
   const load = async () => {
     setLoading(true);
-    const { data, error } = await createClient().from('exam_questions').select('id,exam_id,question_number,section,category,difficulty,prompt,options,correct_option,marks').order('section').order('question_number').limit(500);
+    const { data, error } = await createClient().rpc('admin_list_exam_questions', { p_exam_id: null });
     if (error) setNotice(`Unable to load question bank: ${error.message}`);
     setQuestions((data ?? []) as Question[]);
     setLoading(false);

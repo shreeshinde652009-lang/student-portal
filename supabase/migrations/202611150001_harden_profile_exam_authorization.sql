@@ -11,6 +11,9 @@ REVOKE ALL PRIVILEGES ON TABLE
   public.exam_answers
 FROM PUBLIC, anon, authenticated;
 
+REVOKE ALL (role) ON TABLE public.profiles FROM PUBLIC, anon, authenticated;
+REVOKE ALL (correct_option) ON TABLE public.exam_questions FROM PUBLIC, anon, authenticated;
+
 GRANT SELECT ON TABLE public.profiles TO authenticated;
 GRANT INSERT (id, full_name, mobile, date_of_birth, category, domicile_state)
   ON TABLE public.profiles TO authenticated;
@@ -21,7 +24,9 @@ GRANT SELECT, INSERT, UPDATE ON TABLE public.applications TO authenticated;
 GRANT SELECT ON TABLE public.module_settings TO authenticated;
 GRANT SELECT, INSERT, UPDATE ON TABLE public.exams TO authenticated;
 GRANT SELECT, UPDATE ON TABLE public.exam_days TO authenticated;
-GRANT SELECT, INSERT, UPDATE ON TABLE public.exam_questions TO authenticated;
+GRANT SELECT (id, exam_id, day_id, question_number, section, category, difficulty, prompt, options, marks)
+  ON TABLE public.exam_questions TO authenticated;
+GRANT INSERT, UPDATE ON TABLE public.exam_questions TO authenticated;
 GRANT SELECT ON TABLE public.exam_attempts, public.exam_answers TO authenticated;
 
 DROP POLICY IF EXISTS exam_days_admin_manage ON public.exam_days;
@@ -166,6 +171,31 @@ begin
 end;
 $function$;
 
+CREATE OR REPLACE FUNCTION public.admin_list_exam_questions(p_exam_id uuid DEFAULT NULL)
+RETURNS SETOF public.exam_questions
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO ''
+AS $function$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.profiles AS profile
+    WHERE profile.id = auth.uid()
+      AND profile.role IN ('admin', 'super_admin')
+  ) THEN
+    RAISE EXCEPTION 'Admin access required';
+  END IF;
+
+  RETURN QUERY
+    SELECT question.*
+    FROM public.exam_questions AS question
+    WHERE p_exam_id IS NULL OR question.exam_id = p_exam_id
+    ORDER BY question.section, question.question_number
+    LIMIT 500;
+END;
+$function$;
+
 ALTER FUNCTION public.start_exam_attempt(uuid, uuid) SET search_path = '';
 ALTER FUNCTION public.start_exam_day_attempt(uuid, uuid) SET search_path = '';
 ALTER FUNCTION public.save_exam_answer(uuid, uuid, text, boolean, integer) SET search_path = '';
@@ -195,5 +225,9 @@ REVOKE ALL PRIVILEGES ON FUNCTION public.submit_exam_attempt(uuid, jsonb)
   FROM PUBLIC, anon, authenticated;
 REVOKE ALL PRIVILEGES ON FUNCTION public.enforce_student_capacity()
   FROM PUBLIC, anon, authenticated;
+
+REVOKE ALL PRIVILEGES ON FUNCTION public.admin_list_exam_questions(uuid)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_list_exam_questions(uuid) TO authenticated;
 
 COMMIT;
