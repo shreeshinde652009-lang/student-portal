@@ -238,6 +238,13 @@ async function openExamAttempt(userInteraction: ReturnType<typeof userEvent.setu
 describe('migration compatibility', () => {
   const migration = readFileSync(`${process.cwd()}/supabase/migrations/202611150001_harden_profile_exam_authorization.sql`, 'utf8');
 
+  it('revokes existing profile grants before allowing only registration fields', () => {
+    expect(migration).toMatch(/REVOKE ALL PRIVILEGES ON TABLE[\s\S]*?public\.profiles[\s\S]*?FROM PUBLIC, anon, authenticated;/i);
+    expect(migration).toMatch(/GRANT INSERT \(id, full_name, mobile, date_of_birth, category, domicile_state\)[\s\S]*?TO authenticated;/i);
+    expect(migration).toMatch(/GRANT UPDATE \(id, full_name, mobile, date_of_birth, category, domicile_state\)[\s\S]*?TO authenticated;/i);
+    expect(migration).not.toMatch(/GRANT (?:INSERT|UPDATE)[^;]*\brole\b/i);
+  });
+
   it('grants UPDATE(id) so the existing profile upsert can handle conflicts', () => {
     expect(migration).toMatch(/GRANT UPDATE\s*\(\s*id\s*,/i);
   });
