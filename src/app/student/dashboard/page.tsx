@@ -27,7 +27,7 @@ export default function StudentDashboardPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace('/student/login'); return; }
       const { data: settingRows } = await supabase.from('module_settings').select('key, value');
-      const nextSettings = Object.fromEntries((settingRows ?? []).map((row) => [row.key, parseSettingValue(row.value)]));
+      const nextSettings = Object.fromEntries((settingRows ?? []).map((row: { key: string; value: unknown }) => [row.key, parseSettingValue(row.value)]));
       setModuleSettings(nextSettings);
       const { data, error: queryError } = await supabase.from('applications').select('*').eq('user_id', user.id).maybeSingle();
       if (queryError) setError('Failed to fetch application details.');

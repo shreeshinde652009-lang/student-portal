@@ -63,7 +63,7 @@ export default function AdminPortal() {
         { event: '*', schema: 'public', table: 'applications' },
         () => { void loadApplications(); },
       );
-    void channel.subscribe((status) => {
+    void channel.subscribe((status: string) => {
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         console.warn('[v0] Realtime unavailable; applications remain available from the initial query.');
       }

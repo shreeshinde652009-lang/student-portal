@@ -28,12 +28,9 @@ export default function ApplicationReviewPage() {
       const { data, error } = await supabase.from('applications').select('id, application_number, status, personal_data, academic_data, created_at').eq('id', applicationId).single()
       if (error) { setMessage(`Application unavailable: ${error.message}`); setLoading(false); return }
       setApplication(data)
-      console.log('ADMIN DOCUMENT DEBUG: application_id', applicationId)
       const { data: documentRows, error: documentError } = await supabase.from('documents').select('id, application_id, document_type, file_name, storage_path').eq('application_id', applicationId)
-      console.log('ADMIN DOCUMENT DEBUG: documents query result', documentRows)
-      if (documentError) console.error('ADMIN DOCUMENT DEBUG: documents query error', documentError)
       if (documentError) setMessage(`Documents unavailable: ${documentError.message}`)
-      const resolved = await Promise.all((documentRows ?? []).map(async (document) => {
+      const resolved = await Promise.all(((documentRows ?? []) as DocumentRecord[]).map(async (document: DocumentRecord) => {
         const bucket = 'documents'
         const { data: signed, error: storageError } = await supabase.storage.from(bucket).createSignedUrl(document.storage_path, 3600)
         if (storageError) {
