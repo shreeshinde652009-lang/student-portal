@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
@@ -151,6 +152,20 @@
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
   }
+}
+
+.student-auth-page {
+  background-color: #fff;
+  background-image:
+    linear-gradient(30deg, transparent 49.4%, rgba(32, 54, 107, 0.025) 50%, transparent 50.6%),
+    linear-gradient(150deg, transparent 49.4%, rgba(32, 54, 107, 0.025) 50%, transparent 50.6%),
+    linear-gradient(90deg, transparent 49.4%, rgba(32, 54, 107, 0.02) 50%, transparent 50.6%);
+  background-size: 160px 140px;
+  background-position: 0 0, 80px 70px, 0 0;
+}
+
+.registration-marathi {
+  font-family: "Noto Sans Devanagari", sans-serif;
 }
 
 @keyframes announcement-scroll {

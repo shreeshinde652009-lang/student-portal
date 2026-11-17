@@ -1,7 +1,8 @@
 'use client'
 
 import { FormEvent, useState } from 'react'
-import { ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
+import { StudentAuthShell } from '@/components/student-auth-shell'
 import { createClient } from '@/lib/supabase/client'
 
 export default function RegisterPage() {
@@ -24,6 +25,7 @@ export default function RegisterPage() {
         data: { full_name: fullName },
       },
     })
+
     if (error) {
       const errorText = error.message.toLowerCase()
       setCanResend(errorText.includes('rate limit') || errorText.includes('already registered') || errorText.includes('user already') || errorText.includes('email exists') || errorText.includes('over_email_send_rate_limit'))
@@ -44,6 +46,7 @@ export default function RegisterPage() {
       }
       return
     }
+
     setSuccess(true)
     setCanResend(false)
   }
@@ -56,5 +59,84 @@ export default function RegisterPage() {
     setMessage(error ? 'Unable to resend confirmation right now. Please wait and try again.' : 'Confirmation email sent. Please check your inbox.')
   }
 
-  return <main className="min-h-screen bg-secondary/25 px-5 py-8 lg:px-10"><div className="mx-auto max-w-5xl"><header className="flex items-center justify-between border-b border-border bg-card px-5 py-4"><a href="/" className="inline-flex items-center gap-2 font-semibold text-primary"><ArrowLeft size={17} /> Back to CET Cell</a><span className="text-sm font-semibold text-primary">Academic Year 2026-27</span></header><section className="mx-auto mt-12 grid max-w-4xl gap-8 rounded-2xl border border-border bg-card p-6 shadow-sm md:grid-cols-[.8fr_1.2fr] md:p-10"><div className="flex flex-col justify-center"><p className="text-sm font-bold uppercase tracking-widest text-accent">Candidate account</p><h1 className="mt-3 text-3xl font-bold text-primary">New user registration</h1><p className="mt-4 leading-7 text-muted-foreground">Create your secure account to access CET registration, application forms, hall tickets, and results.</p><div className="mt-6 border border-primary/40 bg-secondary px-4 py-3 text-sm font-semibold leading-6 text-primary">Limited registration: only 20 student seats are available. नोंदणीसाठी फक्त २० विद्यार्थी जागा उपलब्ध आहेत.</div>{canResend && <button type="button" onClick={resendConfirmation} disabled={resending} className="mt-4 border border-primary px-4 py-3 text-left text-sm font-semibold text-primary disabled:opacity-60">{resending ? 'Sending confirmation...' : 'Already registered or rate-limited? Resend confirmation email'}</button>}</div>{success ? <div className="flex flex-col items-center justify-center gap-4 rounded-xl bg-secondary p-8 text-center"><CheckCircle2 className="text-primary" size={42} /><h2 className="text-xl font-bold text-primary">Check your email</h2><p className="text-sm leading-6 text-muted-foreground">Your account was created. Confirm your email, then return to the home page to sign in.</p><a href="/" className="font-semibold text-primary">Return to sign in</a></div> : <form onSubmit={register} className="flex flex-col gap-4"><label className="flex flex-col gap-2 text-sm font-medium">Full name<input required value={fullName} onChange={event => setFullName(event.target.value)} className="rounded-md border border-input bg-background px-3 py-3 outline-none focus:ring-2 focus:ring-ring" /></label><label className="flex flex-col gap-2 text-sm font-medium">Email address<input required type="email" value={email} onChange={event => setEmail(event.target.value)} className="rounded-md border border-input bg-background px-3 py-3 outline-none focus:ring-2 focus:ring-ring" /></label><label className="flex flex-col gap-2 text-sm font-medium">Password<input required minLength={8} type="password" value={password} onChange={event => setPassword(event.target.value)} className="rounded-md border border-input bg-background px-3 py-3 outline-none focus:ring-2 focus:ring-ring" /></label><button type="submit" className="mt-2 rounded-md bg-primary px-4 py-3 font-bold text-primary-foreground">Create account</button>{message && <p role="alert" className="text-sm text-destructive">{message}</p>}<p className="text-center text-sm text-muted-foreground">Already registered? <a href="/" className="font-semibold text-primary">Sign in</a></p></form>}</section></div></main>
+  return (
+    <StudentAuthShell>
+      <section className="rounded-[18px] border border-[#dedede] bg-white px-5 py-6 shadow-[0_4px_18px_rgba(0,0,0,0.04)] sm:px-8 sm:py-7">
+        <div className="mx-auto max-w-[520px]">
+          <a href="/" className="mb-5 inline-flex items-center gap-2 text-sm font-semibold text-[#15549a] underline-offset-4 hover:underline">Back to CET Cell</a>
+          <p className="text-sm font-semibold uppercase tracking-[0.12em] text-[#15549a]">Candidate account</p>
+          <h1 className="mt-2 text-[26px] font-semibold leading-tight text-[#343434]">New user registration</h1>
+          <p className="mt-3 text-sm leading-6 text-[#626262]">Create your secure account to access CET registration, application forms, hall tickets, and results.</p>
+
+          <div className="mt-5 rounded-lg border border-[#cbd9eb] bg-[#f1f6fc] px-4 py-3 text-sm font-medium leading-6 text-[#15549a]">
+            Limited registration: only 20 student seats are available. <span lang="mr" className="registration-marathi">नोंदणीसाठी फक्त २० विद्यार्थी जागा उपलब्ध आहेत.</span>
+          </div>
+
+          {canResend && (
+            <button
+              type="button"
+              onClick={resendConfirmation}
+              disabled={resending}
+              className="mt-4 w-full rounded-lg border border-[#15549a] bg-white px-4 py-3 text-left text-sm font-semibold text-[#15549a] transition hover:bg-[#f4f7fb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15549a] disabled:opacity-60"
+            >
+              {resending ? 'Sending confirmation...' : 'Already registered or rate-limited? Resend confirmation email'}
+            </button>
+          )}
+
+          {success ? (
+            <div className="mt-6 flex flex-col items-center gap-4 rounded-xl border border-[#dce6f2] bg-[#f7faff] p-7 text-center">
+              <CheckCircle2 aria-hidden="true" className="size-11 text-[#15549a]" />
+              <h2 className="text-xl font-semibold text-[#343434]">Check your email</h2>
+              <p className="text-sm leading-6 text-[#626262]">Your account was created. Confirm your email, then return to the home page to sign in.</p>
+              <a href="/" className="font-semibold text-[#15549a] underline-offset-4 hover:underline">Return to sign in</a>
+            </div>
+          ) : (
+            <form onSubmit={register} className="mt-5 flex flex-col gap-4">
+              <label htmlFor="register-full-name" className="flex flex-col gap-1.5 text-sm text-[#454545]">
+                Full name
+                <input
+                  id="register-full-name"
+                  required
+                  autoComplete="name"
+                  value={fullName}
+                  onChange={event => setFullName(event.target.value)}
+                  className="w-full rounded-[10px] border border-[#d7dce4] bg-[#e8f0fc] px-4 py-3 text-sm text-[#333] outline-none transition focus-visible:border-[#4285f4] focus-visible:ring-4 focus-visible:ring-[#b4d2ff]"
+                />
+              </label>
+              <label htmlFor="register-email" className="flex flex-col gap-1.5 text-sm text-[#454545]">
+                Email address
+                <input
+                  id="register-email"
+                  required
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={event => setEmail(event.target.value)}
+                  className="w-full rounded-[10px] border border-[#d7dce4] bg-[#e8f0fc] px-4 py-3 text-sm text-[#333] outline-none transition focus-visible:border-[#4285f4] focus-visible:ring-4 focus-visible:ring-[#b4d2ff]"
+                />
+              </label>
+              <label htmlFor="register-password" className="flex flex-col gap-1.5 text-sm text-[#454545]">
+                Password
+                <input
+                  id="register-password"
+                  required
+                  minLength={8}
+                  type="password"
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={event => setPassword(event.target.value)}
+                  className="w-full rounded-[10px] border border-[#d7dce4] bg-[#e8f0fc] px-4 py-3 text-sm text-[#333] outline-none transition focus-visible:border-[#4285f4] focus-visible:ring-4 focus-visible:ring-[#b4d2ff]"
+                />
+              </label>
+              <button type="submit" className="mt-1 min-h-11 rounded-[10px] bg-[#15549a] px-4 py-3 font-semibold text-white shadow-sm transition hover:bg-[#10477f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15549a]">
+                Create account
+              </button>
+              {message && <p role="alert" className="text-sm text-destructive">{message}</p>}
+              <p className="text-center text-sm text-[#626262]">Already registered? <a href="/" className="font-semibold text-[#15549a] underline-offset-4 hover:underline">Sign in</a></p>
+            </form>
+          )}
+        </div>
+      </section>
+    </StudentAuthShell>
+  )
 }

@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from 'react'
 import { ArrowDown, ChevronDown, Menu, Network, Search, Volume2, X } from 'lucide-react'
+import { StudentAuthShell } from '@/components/student-auth-shell'
 import { createClient } from '@/lib/supabase/client'
 
 function LoginDialog({ onClose }: { onClose: () => void }) {
@@ -23,7 +24,72 @@ function LoginDialog({ onClose }: { onClose: () => void }) {
     window.location.assign('/dashboard')
   }
 
-  return <div className="fixed inset-0 z-50 grid place-items-center bg-primary/50 p-4" role="dialog" aria-modal="true" aria-labelledby="student-sign-in-title"><div className="w-full max-w-3xl rounded-xl border border-border bg-card p-7 shadow-2xl"><div className="mb-6 flex justify-between"><div><p className="font-semibold text-primary">Academic Year 2026-27</p><h2 id="student-sign-in-title" className="mt-1 text-2xl font-bold">Student Sign In</h2></div><button onClick={onClose} aria-label="Close"><X /></button></div><div className="grid gap-6 md:grid-cols-2"><form className="flex flex-col gap-4" onSubmit={handleSubmit}><label className="flex flex-col gap-2 text-sm font-medium">Registered Email ID<input required type="email" value={email} onChange={event => setEmail(event.target.value)} className="rounded-md border border-input bg-background px-3 py-3" /></label><label className="flex flex-col gap-2 text-sm font-medium">Password<input required type="password" value={password} onChange={event => setPassword(event.target.value)} className="rounded-md border border-input bg-background px-3 py-3" /></label>{error && <p className="text-sm text-destructive" role="alert">{error}</p>}<button disabled={loading} className="rounded-md bg-primary px-4 py-3 font-bold text-primary-foreground disabled:opacity-60">{loading ? 'Signing In...' : 'Sign In'}</button></form><div className="flex flex-col justify-center border-t border-border pt-5 text-center md:border-l md:border-t-0 md:pl-6"><h3 className="text-xl font-bold">New user?</h3><a href="/register" className="mt-5 rounded-md bg-primary px-4 py-3 font-bold text-primary-foreground">Register</a></div></div><p className="mt-6 border-t border-border pt-5 text-center text-sm text-primary">Forgot Password · User Manual · Tutorial Video</p><a href="/dashboard/linux-cs-registration" className="mt-4 block rounded-md border border-primary px-4 py-3 text-center font-bold text-primary">Already signed in? Open Linux CS Registration</a></div></div>
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-white" role="dialog" aria-modal="true" aria-labelledby="student-sign-in-title">
+      <StudentAuthShell>
+        <section className="relative rounded-[18px] border border-[#dedede] bg-white px-5 py-6 shadow-[0_4px_18px_rgba(0,0,0,0.04)] sm:px-6 sm:py-6">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close student sign in"
+            className="absolute right-4 top-4 grid size-9 place-items-center rounded-full border border-[#d8d8d8] bg-white text-[#15549a] shadow-sm transition hover:bg-[#f4f7fb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15549a]"
+          >
+            <X aria-hidden="true" className="size-5" />
+          </button>
+          <h1 id="student-sign-in-title" className="text-[23px] font-semibold leading-tight text-[#343434]">Sign In</h1>
+          <div className="mt-4 grid gap-5 md:grid-cols-[minmax(0,1fr)_1px_minmax(0,1fr)] md:gap-10">
+            <form className="flex min-w-0 flex-col gap-4" onSubmit={handleSubmit}>
+              <label htmlFor="student-email" className="flex flex-col gap-1.5 text-sm text-[#454545]">
+                Registered Email ID
+                <input
+                  id="student-email"
+                  required
+                  type="email"
+                  autoComplete="email"
+                  value={email}
+                  onChange={event => setEmail(event.target.value)}
+                  className="w-full rounded-[10px] border border-[#d7dce4] bg-[#e8f0fc] px-4 py-3 text-sm text-[#333] outline-none transition focus-visible:border-[#4285f4] focus-visible:ring-4 focus-visible:ring-[#b4d2ff]"
+                />
+              </label>
+              <label htmlFor="student-password" className="flex flex-col gap-1.5 text-sm text-[#454545]">
+                Password
+                <input
+                  id="student-password"
+                  required
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={event => setPassword(event.target.value)}
+                  className="w-full rounded-[10px] border border-[#d7dce4] bg-[#e8f0fc] px-4 py-3 text-sm text-[#333] outline-none transition focus-visible:border-[#4285f4] focus-visible:ring-4 focus-visible:ring-[#b4d2ff]"
+                />
+              </label>
+              <span className="-mt-1 w-fit text-sm font-semibold text-[#343434]">Forgot Password</span>
+              {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
+              <button disabled={loading} className="mt-1 min-h-11 rounded-[10px] bg-[#15549a] px-4 py-2.5 font-semibold text-white shadow-sm transition hover:bg-[#10477f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15549a] disabled:opacity-60">
+                {loading ? 'Signing In...' : 'Sign In'}
+              </button>
+            </form>
+            <div className="relative flex min-h-8 items-center justify-center md:min-h-0">
+              <span aria-hidden="true" className="h-px w-full bg-[#d5d5d5] md:h-full md:w-px" />
+              <span className="absolute grid size-10 place-items-center rounded-full border border-[#d7dce4] bg-white text-sm font-medium text-[#15549a] shadow-[0_2px_10px_rgba(0,0,0,0.12)]">OR</span>
+            </div>
+            <div className="flex flex-col justify-center text-center">
+              <h2 className="text-[22px] font-semibold text-[#343434]">New user?</h2>
+              <a href="/register" className="mt-4 inline-flex min-h-11 items-center justify-center rounded-[10px] bg-[#15549a] px-4 py-2.5 font-semibold text-white shadow-sm transition hover:bg-[#10477f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15549a]">Register</a>
+            </div>
+          </div>
+          <nav aria-label="Student help links" className="mt-4 flex flex-col items-center gap-3 px-2 pt-2 text-center text-sm font-medium text-[#15549a]">
+            <p><span className="text-[#343434]">How to Register - </span><span>User Manual</span><span className="px-2 text-[#777]">|</span><span>Tutorial Video</span></p>
+            <p>How to Raise a Ticket</p>
+            <p><span>How to create DigiLocker Account</span><span className="px-2 text-[#777]">|</span><span>How to create APAAR ID</span></p>
+          </nav>
+        </section>
+        <a href="/dashboard/linux-cs-registration" className="mx-auto block max-w-[840px] rounded-[10px] border border-[#15549a] bg-white px-4 py-3 text-center text-sm font-semibold text-[#15549a] transition hover:bg-[#f4f7fb] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15549a]">
+          Already signed in? Open Linux CS Registration
+        </a>
+      </StudentAuthShell>
+    </div>
+  )
 }
 
 const primaryNavigation = [
