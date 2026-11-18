@@ -3,8 +3,8 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'State CET Cell Maharashtra | Student Portal',
-  description: 'Official student portal for Maharashtra Common Entrance Tests, applications, hall tickets, and results.',
+  title: 'Government of Maharashtra | State CET Cell',
+  description: 'Official home of the Maharashtra State Common Entrance Test Cell for entrance examinations, admissions, and candidate services.',
   generator: 'v0.app',
   icons: {
     icon: [
