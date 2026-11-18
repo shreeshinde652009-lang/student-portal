@@ -1,6 +1,15 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
 
-export default function OptionFormPage() {
+export default async function OptionFormPage() {
+  const supabase = await createClient()
+  const { data: { user }, error } = await supabase.auth.getUser()
+
+  if (error || !user) {
+    redirect('/')
+  }
+
   return (
     <main className="min-h-screen bg-card px-5 py-10 text-foreground">
       <div className="mx-auto max-w-3xl rounded-xl border border-border bg-background p-8 shadow-sm">

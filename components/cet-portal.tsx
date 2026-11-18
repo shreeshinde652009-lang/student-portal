@@ -10,6 +10,40 @@ function LoginDialog({ onClose }: { onClose: () => void }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [resetting, setResetting] = useState(false)
+  const [resetMessage, setResetMessage] = useState('')
+
+  async function handleForgotPassword() {
+    setError('')
+    setResetMessage('')
+
+    if (!email.trim()) {
+      setError('Enter your registered email address first.')
+      return
+    }
+
+    setResetting(true)
+    try {
+      const redirectUrl = new URL(
+        process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL ?? `${window.location.origin}/auth/callback`,
+      )
+      redirectUrl.searchParams.set('next', '/reset-password')
+      const { error: resetError } = await createClient().auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: redirectUrl.toString(),
+      })
+
+      if (resetError) {
+        setError('Unable to send reset instructions right now. Please try again later.')
+        return
+      }
+
+      setResetMessage('If an account exists for this email, password reset instructions have been sent.')
+    } catch {
+      setError('Unable to send reset instructions right now. Please try again later.')
+    } finally {
+      setResetting(false)
+    }
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -63,7 +97,15 @@ function LoginDialog({ onClose }: { onClose: () => void }) {
                   className="w-full rounded-[10px] border border-[#d7dce4] bg-[#e8f0fc] px-4 py-3 text-sm text-[#333] outline-none transition focus-visible:border-[#4285f4] focus-visible:ring-4 focus-visible:ring-[#b4d2ff]"
                 />
               </label>
-              <span className="-mt-1 w-fit text-sm font-semibold text-[#343434]">Forgot Password</span>
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={resetting}
+                className="-mt-1 w-fit text-sm font-semibold text-[#15549a] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15549a] disabled:opacity-60"
+              >
+                {resetting ? 'Sending reset instructions...' : 'Forgot Password?'}
+              </button>
+              {resetMessage && <p className="text-sm text-[#15549a]" role="status">{resetMessage}</p>}
               {error && <p className="text-sm text-destructive" role="alert">{error}</p>}
               <button disabled={loading} className="mt-1 min-h-11 rounded-[10px] bg-[#15549a] px-4 py-2.5 font-semibold text-white shadow-sm transition hover:bg-[#10477f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#15549a] disabled:opacity-60">
                 {loading ? 'Signing In...' : 'Sign In'}
